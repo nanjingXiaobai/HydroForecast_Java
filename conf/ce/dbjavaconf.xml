@@ -1,0 +1,24 @@
+<com.sgepri.ce.db.DBDefineGlobal_-DBDefineData>
+    <flagDBService>1</flagDBService>
+    <showPrintSql>true</showPrintSql>
+    <real_cache_minute>0</real_cache_minute>
+    <ceweb_def_minute>0</ceweb_def_minute>
+    <web_single_cache_minute>0</web_single_cache_minute>
+    <web_ts_cache_minute>0</web_ts_cache_minute>
+    <vectJdbc>
+        <com.sgepri.ce.db.DBDefineGlobal_-JDBC>
+            <name>WDS</name>
+            <jdbcUrl>jdbc:dm://196.167.30.69:5236/MWDS</jdbcUrl>
+            <user>MWDS</user>
+            <passwd>Comnari@2025</passwd>
+<!--            <jdbcUrl>jdbc:dm://10.18.61.73:5236/USER_WOU</jdbcUrl>-->
+<!--            <user>USER_WOU</user>-->
+<!--            <passwd>Comnari@2025</passwd>-->
+            <jdbcDriver>dm.jdbc.driver.DmDriver</jdbcDriver>
+            <maxConnections>1</maxConnections>
+            <minConnections>1</minConnections>
+            <checkQuery>select 1</checkQuery>
+        </com.sgepri.ce.db.DBDefineGlobal_-JDBC>
+
+    </vectJdbc>
+</com.sgepri.ce.db.DBDefineGlobal_-DBDefineData>

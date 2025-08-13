@@ -1,0 +1,26 @@
+<list>
+    <com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>
+        <service>WDS</service>
+        <!--四川-->
+        <url>jdbc:dm://196.167.30.69:5236/MWDS</url>
+        <user>MWDS</user>
+        <password>Comnari@2025</password>
+        <!--福建-->
+<!--        <url>jdbc:dm://10.18.61.51:5236/wds</url>-->
+<!--        <user>WDS</user>-->
+<!--        <password>narisqslsd</password>-->
+        <driver>dm.jdbc.driver.DmDriver</driver>
+        <maxCon>7</maxCon>
+        <minCon>3</minCon>
+    </com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>
+<!--    <com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>-->
+<!--        <service>PUB</service>-->
+<!--        <url>jdbc:dm://196.167.30.69:5236/pubuser</url>-->
+<!--        <user>PUBUSER</user>-->
+<!--        <password>Comnari@2025</password>-->
+<!--        <driver>dm.jdbc.driver.DmDriver</driver>-->
+<!--        <maxCon>7</maxCon>-->
+<!--        <minCon>3</minCon>-->
+<!--    </com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>-->
+</list>
+
