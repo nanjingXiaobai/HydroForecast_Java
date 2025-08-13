@@ -7,15 +7,16 @@ import com.sgepri.ce.db.ResultSetInterface;
 import com.sgepri.ce.db.util.DBOpUtil;
 import com.sgepri.ce.db.util.DBSplitUtil;
 import com.sgepri.ce.util.TimeFunc;
-
+import org.apache.poi.ss.formula.functions.T;
 
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.Optional;
 
 public class AbnormalWeatherCalculation {
     private static String[] plantid = "154400,154705,154210,154100".split(",");
+    private static String[] powerid = "120,150,170,110400".split(",");
 
     public void saveAbnormalWeather(String date) {
         Calendar cd = TimeFunc.getPeriodBeg(5, Calendar.getInstance());
@@ -110,7 +111,7 @@ public class AbnormalWeatherCalculation {
         long lte = TimeFunc.add(date, 5, 30);
         for (int i = 0; i < plantid.length; i++) {
             try {
-                ResultSetInterface rs = DBSplitUtil.exeTimeDBSelSql("daydb", ltb, lte, plantid[i] + "2110", "time,v");
+                ResultSetInterface rs = DBSplitUtil.exeTimeDBSelSql("daydb", ltb, lte, powerid[i] + "2110", "time,v");
                 JSONObject datas = new JSONObject();
                 for (int j=0;j<rs.getRowNum();j++){
                     datas.put(rs.getDate(j,0).getTimeInMillis()+"",rs.getDouble(j,1));
