@@ -14,6 +14,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.nari.slsd.hps.dbmgr.conf.DBManager;
+import com.nari.slsd.hps.dbmgr.conf.SqlManager;
 import com.nari.slsd.hydro.backend.HFWebService;
 import com.nari.slsd.hydro.backend.hf.model.SchemeModel.HFForeObj;
 import com.nari.slsd.hydro.backend.hf.model.TopologyModel.HFPreStation;
@@ -45,6 +46,7 @@ import org.w3c.dom.Document;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -77,7 +79,29 @@ public class FloodResults {
 
     private static File hfScheme;
 
-    private static cn.hutool.json.JSONArray ARR;
+    @Value("${service.cron.saveabnormalweather.isMajor}")
+    private boolean isMajor;
+    private static boolean ISMAJOR;
+
+    @Value("${watershedStatistics.dm}")
+    private String watershedStatisticsDm;
+    private static String WATERSHEDSTATISTICS_DM;
+
+    @Value("${watershedStatistics.river}")
+    private String watershedStatisticsRiver;
+    private static String WATERSHEDSTATISTICS_RIVER;
+
+    @Value("${watershedStatistics.basinName}")
+    private String watershedStatisticsBasinName;
+    private static String WATERSHEDSTATISTICS_BASINNAME;
+
+    @Value("${watershedStatistics.foreObjName}")
+    private String watershedStatisticsForeObjName;
+    private static String WATERSHEDSTATISTICS_FOREOBJNAME;
+
+    @Value("${watershedStatistics.weights}")
+    private String watershedStatisticsWeights;
+    private static double[] WATERSHEDSTATISTICS_WEIGHTS;
 
     @PostConstruct
     public void init() {
@@ -99,19 +123,22 @@ public class FloodResults {
             this.hfScheme = new File(shortTermHfScheme);
         }
 
-        Document document = XmlUtil.readXML(hfScheme);
-
-        String xmlStr = XmlUtil.toStr(document);
-
-        cn.hutool.json.JSONObject json = JSONUtil.parseFromXml(xmlStr);
-
-        ARR = json.getJSONObject("foreSchemeSet").getJSONArray("scheme");
-
         flowSenids = JSON.parseObject(new String(flow_senids.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8));
 
         hfWebService = new HFWebService(chorEn, this.hWindow, this.hfScheme);
 
         this.typeMap = hfWebService.getInternationalMap();
+
+        ISMAJOR = isMajor;
+        WATERSHEDSTATISTICS_DM = new String(watershedStatisticsDm.getBytes(StandardCharsets.ISO_8859_1));
+        WATERSHEDSTATISTICS_RIVER =  new String(watershedStatisticsRiver.getBytes(StandardCharsets.ISO_8859_1));
+        WATERSHEDSTATISTICS_BASINNAME =   new String(watershedStatisticsBasinName.getBytes(StandardCharsets.ISO_8859_1));
+        WATERSHEDSTATISTICS_FOREOBJNAME =  new String(watershedStatisticsForeObjName.getBytes(StandardCharsets.ISO_8859_1));
+        String[] strArray = watershedStatisticsWeights.split(", ");
+        WATERSHEDSTATISTICS_WEIGHTS = new double[strArray.length];
+        for (int i = 0; i < strArray.length; i++) {
+            WATERSHEDSTATISTICS_WEIGHTS[i] = Double.parseDouble(strArray[i]);
+        }
     }
 
     public static HFWebService hfWebService = null;
@@ -930,122 +957,122 @@ public class FloodResults {
         JSONObject markArea = new JSONObject();
         JSONArray markAreaList = new JSONArray();
 
-        String plantid = flowSenids.getString(params.getString("name")).substring(0,6);
 
+        if (ISMAJOR) {
+            String plantid = flowSenids.getString(params.getString("name")).substring(0, 6);
+            //获取时段开始结束,重大天气标识
+            String timeType = params.getString("falx");
+            Calendar startDate = DBOpUtil.getCalendar(TimeFunc.parseDateTime(tableData.get(0).getString("Time")));
+            Calendar endDate = DBOpUtil.getCalendar(TimeFunc.parseDateTime(tableData.get(tableData.size() - 1).getString("Time")));
+            if (!timeType.equals("日")) {
+                startDate = TimeFunc.getPeriodEnd(5, startDate);
+                endDate = TimeFunc.getPeriodBeg(5, TimeFunc.add(endDate, 5, -1));
+            }
+            //预报重大天气
+            {
+                //String sql = "select time,v from daydb where senid = " + plantid + "90 and time >= " + TimeFunc.toDbString(startDate) + " and time <= " + TimeFunc.toDbString(endDate);
+                ResultSetInterface rs = DBSplitUtil.exeTimeDBSelSql("daydb", startDate.getTimeInMillis(), endDate.getTimeInMillis(), plantid + "90", "time,v");
+                if (rs.getRowNum() > 0) {
+                    String firstDeviationTime = null;
+                    String lastDeviationTime = null;
+                    for (int i = 0; i < rs.getRowNum(); i++) {
 
-        //获取时段开始结束,重大天气标识
-        String timeType = params.getString("falx");
-        Calendar startDate = DBOpUtil.getCalendar(TimeFunc.parseDateTime(tableData.get(0).getString("Time")));
-        Calendar endDate = DBOpUtil.getCalendar(TimeFunc.parseDateTime(tableData.get(tableData.size() - 1).getString("Time")));
-        if (!timeType.equals("日")) {
-            startDate = TimeFunc.getPeriodEnd(5, startDate);
-            endDate = TimeFunc.getPeriodBeg(5, TimeFunc.add(endDate, 5, -1));
-        }
-        //预报重大天气
-        {
-            //String sql = "select time,v from daydb where senid = " + plantid + "90 and time >= " + TimeFunc.toDbString(startDate) + " and time <= " + TimeFunc.toDbString(endDate);
-            ResultSetInterface rs = DBSplitUtil.exeTimeDBSelSql("daydb",startDate.getTimeInMillis(),endDate.getTimeInMillis(),plantid+"90","time,v");
-            if (rs.getRowNum() > 0) {
-            String firstDeviationTime = null;
-            String lastDeviationTime = null;
-                for (int i = 0; i < rs.getRowNum(); i++) {
+                        if (rs.getDouble(i, 1) == -1) {
+                            if (firstDeviationTime == null) {
+                                firstDeviationTime = TimeFunc.getFormatStr(rs.getDate(i, 0), "yyyy-MM-dd HH:mm:ss");
 
-                    if (rs.getDouble(i, 1) == -1) {
-                    if (firstDeviationTime == null) {
-                            firstDeviationTime = TimeFunc.getFormatStr(rs.getDate(i, 0), "yyyy-MM-dd HH:mm:ss");
+                            }
+
+                            lastDeviationTime = TimeFunc.getFormatStr(rs.getDate(i, 0), "yyyy-MM-dd HH:mm:ss");
+                        } else {
+                            if (firstDeviationTime == null) continue;
+                            try {
+                                if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 10) {
+                                    JSONArray markAreaData = new JSONArray();
+                                    markAreaList.add(markAreaData);
+//                            markAreaData.add(JSON.parseObject("{itemStyle:{color:'red'},xAxis:'" + firstDeviationTime + "'}"));
+                                    markAreaData.add(JSON.parseObject("{flag:-1,label:{position:\"insideBottom\",offset:[44,0]},name:\"低来水天气过程\",xAxis:'" + firstDeviationTime + "'}"));
+                                    markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
+                                }
+                                firstDeviationTime = null;
+                                lastDeviationTime = null;
+
+                            } catch (Exception e) {
+                            }
+                        }
 
                     }
-
-                        lastDeviationTime = TimeFunc.getFormatStr(rs.getDate(i, 0), "yyyy-MM-dd HH:mm:ss");
-                } else {
-                    if (firstDeviationTime == null) continue;
                     try {
-                        if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 10) {
-                            JSONArray markAreaData = new JSONArray();
+                        if (firstDeviationTime != null) {
+                            if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 9) {
+                                JSONArray markAreaData = new JSONArray();
                                 markAreaList.add(markAreaData);
 //                            markAreaData.add(JSON.parseObject("{itemStyle:{color:'red'},xAxis:'" + firstDeviationTime + "'}"));
                                 markAreaData.add(JSON.parseObject("{flag:-1,label:{position:\"insideBottom\",offset:[44,0]},name:\"低来水天气过程\",xAxis:'" + firstDeviationTime + "'}"));
-                            markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
+                                markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
+                            }
                         }
-                        firstDeviationTime = null;
-                        lastDeviationTime = null;
-
                     } catch (Exception e) {
                     }
                 }
-
             }
-            try {
-                if (firstDeviationTime != null) {
-                        if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 9) {
-                        JSONArray markAreaData = new JSONArray();
-                            markAreaList.add(markAreaData);
+            //调度重大天气
+            {
+                //String sql = "select time,v from daydb where senid = " + plantid + "91 and time >= " + TimeFunc.toDbString(startDate) + " and time <= " + TimeFunc.toDbString(endDate);
+                ResultSetInterface rs = DBSplitUtil.exeTimeDBSelSql("daydb", startDate.getTimeInMillis(), endDate.getTimeInMillis(), plantid + "91", "time,v");
+                if (rs.getRowNum() > 0) {
+
+                    String firstDeviationTime = null;
+                    String lastDeviationTime = null;
+                    for (int i = 0; i < rs.getRowNum(); i++) {
+
+                        if (rs.getDouble(i, 1) == 1) {
+                            if (firstDeviationTime == null) {
+                                firstDeviationTime = TimeFunc.getFormatStr(rs.getDate(i, 0), "yyyy-MM-dd HH:mm:ss");
+
+                            }
+
+                            lastDeviationTime = TimeFunc.getFormatStr(rs.getDate(i, 0), "yyyy-MM-dd HH:mm:ss");
+                        } else {
+                            if (firstDeviationTime == null) continue;
+                            try {
+                                if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 0) {
+                                    JSONArray markAreaData = new JSONArray();
+                                    markAreaList.add(markAreaData);
 //                            markAreaData.add(JSON.parseObject("{itemStyle:{color:'red'},xAxis:'" + firstDeviationTime + "'}"));
-                            markAreaData.add(JSON.parseObject("{flag:-1,label:{position:\"insideBottom\",offset:[44,0]},name:\"低来水天气过程\",xAxis:'" + firstDeviationTime + "'}"));
-                        markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
-                    }
-                }
-            } catch (Exception e) {
-            }
-        }
-            }
-        //调度重大天气
-        {
-            //String sql = "select time,v from daydb where senid = " + plantid + "91 and time >= " + TimeFunc.toDbString(startDate) + " and time <= " + TimeFunc.toDbString(endDate);
-            ResultSetInterface rs = DBSplitUtil.exeTimeDBSelSql("daydb",startDate.getTimeInMillis(),endDate.getTimeInMillis(),plantid+"91","time,v");
-            if (rs.getRowNum() > 0) {
+                                    markAreaData.add(JSON.parseObject("{flag:1,label:{position:\"insideTop\",offset:[-37,0]},hbpc:1,name:\"涨水天气过程\",xAxis:'" + firstDeviationTime + "'}"));
+                                    markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
+                                }
+                                firstDeviationTime = null;
+                                lastDeviationTime = null;
 
-            String firstDeviationTime = null;
-            String lastDeviationTime = null;
-                for (int i = 0; i < rs.getRowNum(); i++) {
-
-                    if (rs.getDouble(i,1) == 1) {
-                    if (firstDeviationTime == null) {
-                            firstDeviationTime = TimeFunc.getFormatStr(rs.getDate(i, 0), "yyyy-MM-dd HH:mm:ss");
+                            } catch (Exception e) {
+                            }
+                        }
 
                     }
-
-                        lastDeviationTime = TimeFunc.getFormatStr(rs.getDate(i, 0), "yyyy-MM-dd HH:mm:ss");
-                } else {
-                    if (firstDeviationTime == null) continue;
                     try {
-                            if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 0) {
-                            JSONArray markAreaData = new JSONArray();
+                        if (firstDeviationTime != null) {
+                            if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 1) {
+                                JSONArray markAreaData = new JSONArray();
                                 markAreaList.add(markAreaData);
 //                            markAreaData.add(JSON.parseObject("{itemStyle:{color:'red'},xAxis:'" + firstDeviationTime + "'}"));
                                 markAreaData.add(JSON.parseObject("{flag:1,label:{position:\"insideTop\",offset:[-37,0]},hbpc:1,name:\"涨水天气过程\",xAxis:'" + firstDeviationTime + "'}"));
-                            markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
+                                markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
+                            }
                         }
-                        firstDeviationTime = null;
-                        lastDeviationTime = null;
-
                     } catch (Exception e) {
                     }
                 }
 
             }
-            try {
-                if (firstDeviationTime != null) {
-                    if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 1) {
-                        JSONArray markAreaData = new JSONArray();
-                            markAreaList.add(markAreaData);
-//                            markAreaData.add(JSON.parseObject("{itemStyle:{color:'red'},xAxis:'" + firstDeviationTime + "'}"));
-                            markAreaData.add(JSON.parseObject("{flag:1,label:{position:\"insideTop\",offset:[-37,0]},hbpc:1,name:\"涨水天气过程\",xAxis:'" + firstDeviationTime + "'}"));
-                        markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
-                    }
-                }
-            } catch (Exception e) {
+
+            if (markAreaList.size() > 0) {
+                markArea.put("data", markAreaList);
+                markArea.put("silent", true);
+                result.put("markArea", markArea);
             }
         }
-
-        }
-
-        if (markAreaList.size() > 0){
-            markArea.put("data", markAreaList);
-            markArea.put("silent", true);
-            result.put("markArea", markArea);
-        }
-
         //39.获取单个断面的水库调度设置信息
         //对应方法：Map<String, String> getSecDispatchSettingMap(String userName, String foreObjName, String secName)
         //传入参数：用户名，预报对象名，断面名
@@ -1259,18 +1286,13 @@ public class FloodResults {
         //预报对象
         List<String> list = JSONObject.parseArray(JSON.toJSONString(params.getJSONArray("data")), String.class);
         list.forEach(x -> {
-
             //根据预报对象获取方案名
             List<String> l = hfWebService.getAllModelNameByForeObj(params.getString("userName"), x);
-
             Vector<String> schemeVec = new Vector<String>();
             l.forEach(k -> {
                 schemeVec.add(k);
             });
-
             foreObjSchemeMap.put(x, schemeVec);
-
-
         });
 
         hfWebService.saveHFRes(params.getString("userName"), params.getString("name"), foreObjSchemeMap);
@@ -3441,12 +3463,16 @@ public class FloodResults {
         if (null == arr) {
             arr = JSONArray.parseArray("[0]");
         }
+        boolean isFlowOrReg = null == params.getBoolean("isFlowOrReg") ? true : params.getBoolean("isFlowOrReg");
+        if (null == arr) {
+            arr = JSONArray.parseArray("[0]");
+        }
 
         List<Integer> type = JSONArray.parseArray(arr.toJSONString(), Integer.class);
 
         boolean onlyOutSec = params.getBoolean("onlyOutSec");
 
-        List<Map<String, String>> list = hfWebService.getAllSecForeStaticMap(userName, ly, type, onlyOutSec);
+        List<Map<String, String>> list = hfWebService.getAllSecForeStaticMap(userName, ly, type, onlyOutSec, isFlowOrReg);
 
         //表头数据
         List<JSONObject> tableHeader = new LinkedList<>();
@@ -3988,13 +4014,13 @@ public class FloodResults {
         String basinName = params.getString("basinNames");
         String foreObjName = params.getString("foreObjNames");
 
-        sectionName = "紫坪铺,亭子口,瀑布沟,二滩";
-        basinName = "长江上游流域";
-        foreObjName = "四川预报电站";
+        sectionName = WATERSHEDSTATISTICS_DM;
+        basinName = WATERSHEDSTATISTICS_BASINNAME;
+        foreObjName = WATERSHEDSTATISTICS_FOREOBJNAME;
 
         JSONObject return_data = new JSONObject();
         String userName = params.getString("userName");
-        double[] weights = new double[]{0.138d, 0.125d, 0.619d, 0.118d};
+        double[] weights = WATERSHEDSTATISTICS_WEIGHTS;
         String[] sectionNames = sectionName.split(",");
         String[] foreObjNames = foreObjName.split(",");
         String type = params.getString("type");
@@ -4005,7 +4031,9 @@ public class FloodResults {
         List<Integer> typeList = Arrays.asList(type.split(",")).stream().map(x -> Integer.parseInt(x)).collect(Collectors.toList());
         JSONArray pieData = new JSONArray();
         JSONArray processData = new JSONArray();
-        JSONArray basinData = JSONArray.parseArray("[\"岷江\",\"嘉陵江\",\"大渡河\",\"雅砻江\",\"全网\"]");
+//        JSONArray basinData = JSONArray.parseArray("[\"大渡河\",\"雅砻江\",\"岷江\",\"嘉陵江\",\"全网\"]");
+       List<String> basinData = new ArrayList<>(Arrays.asList(WATERSHEDSTATISTICS_RIVER.split(",")));
+       basinData.add("全网");
         JSONArray compareData = new JSONArray();
 
         double basinFlow = 0d;
@@ -4028,7 +4056,7 @@ public class FloodResults {
             });
             double foreFlow = 0;
             JSONObject process = new JSONObject();
-            process.put("name", basinData.getString(i));
+            process.put("name", basinData.get(i));
             process.put("type", "line");
             JSONArray data = new JSONArray();
             process.put("data", data);
@@ -4037,7 +4065,7 @@ public class FloodResults {
                 foreFlow += Double.parseDouble(entry.getValue());
             }
             processData.add(process);
-            pieData.add(JSONObject.parseObject("{name:\"" + basinData.getString(i) + "\",value:" + foreFlow / data.size() + "}"));
+            pieData.add(JSONObject.parseObject("{name:\"" + basinData.get(i) + "\",value:" + foreFlow / data.size() + "}"));
             try {
                 Calendar btime = DBOpUtil.getCalendar(TimeFunc.parseDateTime(data.getJSONArray(0).getString(0)));
                 Calendar etime = DBOpUtil.getCalendar(TimeFunc.parseDateTime(data.getJSONArray(data.size() - 1).getString(0)));
@@ -4059,6 +4087,15 @@ public class FloodResults {
         if (basinFlow != 0) {
             compareData.add((basinForeFlow - basinFlow) / basinFlow * 100);
         }
+
+        //装机占比
+        File file = new File("conf/forecast/pieData.json");
+        if (FileUtil.exist(file)) {
+            cn.hutool.json.JSONArray array = JSONUtil.readJSONArray(file, Charset.forName("UTF-8"));
+            return_data.put("pieData", array);
+
+        }
+
         return return_data;
     }
 
@@ -4072,6 +4109,13 @@ public class FloodResults {
             case "日":
                 table = "daydb";
         }
+        if(StrUtil.equals("WOU", SqlManager.getServiceNames()[0])){
+             table = "WOU_DATA_HOURDB";
+            switch (type) {
+                case "日":
+                    table = "WOU_DATA_DAYDB";
+            }
+        }
         String sql = "select avg(v) from " + table + " where senid = " + senid + " and time >= " + TimeFunc.toDbString(btime) + " and time <= " + TimeFunc.toDbString(etime);
 
         try {
@@ -4081,6 +4125,7 @@ public class FloodResults {
         }
         return flow;
     }
+
 
     public static void main(String[] args) {
 
@@ -4196,7 +4241,7 @@ public class FloodResults {
         String endTime = params.getString("endTime");
         String stationName = params.getString("stationName");
 
-        //根据时间类型、电站名称组装实测、预测点号
+        //根据时间类型、电站名称组装实测、预测点号500
         Map<String, String> map = getFlowSenids(type, stationName);
 
         Set<String> keySet = map.keySet();
@@ -4244,6 +4289,23 @@ public class FloodResults {
     //根据时间类型、电站名称组装实测、预测点号
     private static Map<String, String> getFlowSenids(String type, String stationName) {
 
+        Document document = XmlUtil.readXML(hfScheme);
+
+        String xmlStr = XmlUtil.toStr(document);
+
+        cn.hutool.json.JSONObject json = JSONUtil.parseFromXml(xmlStr);
+
+        cn.hutool.json.JSONObject foreSchemeSet = json.getJSONObject("foreSchemeSet");
+
+        Object obj = foreSchemeSet.get("scheme");
+        cn.hutool.json.JSONArray ARR = new cn.hutool.json.JSONArray();
+        if (obj instanceof JSONArray) {
+            ARR = json.getJSONObject("foreSchemeSet").getJSONArray("scheme");
+        } else {
+            cn.hutool.json.JSONObject setJSONObject = foreSchemeSet.getJSONObject("scheme");
+            ARR.add(setJSONObject);
+        }
+
         Map<String, String> map = new HashMap<>();
         DecimalFormat decimalFormat = new DecimalFormat("00");
         String timeType = "RSHour";
@@ -4283,12 +4345,38 @@ public class FloodResults {
 
                 JSONObject section = getChildren(interSection.toJavaList(JSONObject.class), stationName);
 
-                //获取测站点号
-                String stationId = section.getString("interSecId");
+                //判断是否有预测点号。如果没有就拼接
+                String actualId=null;
+                if(null !=section.get("publishIdConfig")){
+                   JSONObject publishIdConfig= section.getJSONObject("publishIdConfig");
+                   Object dataSet= publishIdConfig.get("dataSet");
+                   if(null !=dataSet){
+                       if(dataSet instanceof JSONArray){
+                           for (int i = 0; i < publishIdConfig.getJSONArray("dataSet").size(); i++) {
+                               JSONObject jsonObject = publishIdConfig.getJSONArray("dataSet").getJSONObject(i);
+                               if (StrUtil.equals(jsonObject.getString("dataSetName"), "m_FPAvgRCQCal")) {
+                                   actualId = jsonObject.getString("publishId");
+                                   break;
+                               }
+                           }
+                       }else{
+                           if(StrUtil.equals(publishIdConfig.getJSONObject("dataSet").getString("dataSetName"), "m_FPAvgRCQCal")) {
+                               actualId = publishIdConfig.getJSONObject("dataSet").getString("publishId");
+                           }
+                       }
+
+                   }
+                }
+
+                if(StrUtil.isBlank(actualId)){
+                    //获取测站点号
+                    String stationId = section.getString("interSecId");
+                    //拼接预测点号
+                     actualId = stationId + timeNum + foreTimeStep + modelSchID + suffixNum;
+                }
+
                 //获取实测点号
                 String flowId = section.getJSONObject("HFDataSourceVec").getJSONObject("HFDataSource").getString("flowid");
-                //拼接预测点号
-                String actualId = stationId + timeNum + foreTimeStep + modelSchID + suffixNum;
                 map.put(flowId, "flow");
                 map.put(actualId, "prediction");
                 return map;

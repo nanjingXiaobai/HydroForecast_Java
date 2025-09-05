@@ -1,12 +1,19 @@
 package com.yr.wds.xinyidai.common.cev.flood.service.powerCapacityPrediction;
 
 
+import ch.qos.logback.core.joran.spi.XMLUtil;
+import cn.hutool.core.util.XmlUtil;
+import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.yr.wds.xinyidai.common.cev.flood.config.R;
 import com.yr.wds.xinyidai.common.cev.flood.service.commonsql.CommonSql;
 import com.yr.wds.xinyidai.common.cev.flood.service.powerCapacityPrediction.util.TreeBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.w3c.dom.Document;
+
+import java.io.File;
 import java.util.*;
 
 
@@ -45,24 +52,57 @@ public class PowerCapacityPrediction {
 
     private R getTree() throws Exception {
 
-        Map<String,Object> result=new HashMap<>();
+        Map<String, Object> tree=new HashMap<>();
 
-        //获取电站基本数据
-        List<JSONObject> reservoirList = commonSql.getAllReservoir();
+        File file = new File( System.getProperty("user.dir") + "/conf/forecast/Tree.xml");
+        if(file.exists()){
+            Document winDocument = XmlUtil.readXML(file);
+            String winXmlStr = XmlUtil.toStr(winDocument);
+            JSONObject js = JSONObject.parseObject(JSONUtil.parseFromXml(winXmlStr).toString());
+            JSONArray array=js.getJSONObject("root").getJSONArray("basinTree");
+            array= getTree(array);
+            tree.put("basinTree",array);
 
-        //获取流域数据
-        List<JSONObject> basinList = commonSql.getRiverBasin();
+        }else{
+            //获取电站基本数据
+            List<JSONObject> reservoirList = commonSql.getAllReservoir();
 
-        //获取断面数据
-        List<JSONObject> sectList = commonSql.getSectionList(null);
+            //获取流域数据
+            List<JSONObject> basinList = commonSql.getRiverBasin();
 
-        // 构建流域树、断面树
-        Map<String, Object> tree =new TreeBuilder().buildTrees(basinList,sectList ,reservoirList);
-        result.putAll(tree);
+            //获取断面数据
+            List<JSONObject> sectList = commonSql.getSectionList(null);
 
-        return R.ok(result);
+            // 构建流域树、断面树
+            tree =new TreeBuilder().buildTrees(basinList,sectList ,reservoirList);
+        }
+
+
+
+        return R.ok(tree);
     }
 
 
+    private JSONArray getTree(JSONArray array)  {
+
+        for (int i = 0; i < array.size(); i++) {
+
+            JSONObject js = array.getJSONObject(i);
+
+           Object children = js.get("children");
+           if(children!=null && children instanceof JSONObject){
+               JSONObject jsonObject=js.getJSONObject("children");
+               JSONArray jsonArray=new JSONArray();
+               jsonArray.add(jsonObject);
+               js.put("children",jsonArray);
+           }else if(children!=null && children instanceof JSONArray){
+               JSONArray jsonArray=js.getJSONArray("children");
+               getTree(jsonArray); // 递归处理子节点，但不返回
+           }
+           
+        }
+
+        return array;
+    }
 
 }

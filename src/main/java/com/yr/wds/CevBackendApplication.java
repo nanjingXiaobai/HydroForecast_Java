@@ -24,7 +24,7 @@ public class CevBackendApplication {
         SpringApplication.run(CevBackendApplication.class, args);
 
         //开始自动预报
-        HFAutoForeService.main(args);
+//        HFAutoForeService.main(args);
 
         System.out.println(" ......................阿弥陀佛......................\n"+
                 "                       _oo0oo_                      \n"+

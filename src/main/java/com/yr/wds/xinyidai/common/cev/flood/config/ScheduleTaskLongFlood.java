@@ -2,15 +2,10 @@ package com.yr.wds.xinyidai.common.cev.flood.config;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
-
-import com.nari.slsd.hps.dbmgr.dao.ConnectionJDBC;
-import com.nari.slsd.hydro.backend.HFWebService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
-
 
 
 @Configuration      //1.主要用于标记配置类，兼备Component的效果。
@@ -24,7 +19,7 @@ public class ScheduleTaskLongFlood {
     @Value("${schedule.cronExpression}")
     private String cronExpression;
 
-  public String[] getCronExpression() {
+    public String[] getCronExpression() {
 
         String value[] = new String[4];
 
@@ -45,26 +40,6 @@ public class ScheduleTaskLongFlood {
 
         return value;
     }
-
-
-    @Scheduled(cron = "0 0/3 * * * ?")
-    public void sendMessage() {
-
-        System.out.println("数据库链接。。。。");
-
-        try {
-
-            HFWebService.getAllYbrList(type);
-        } catch (Exception e) {
-            e.printStackTrace();
-
-            ConnectionJDBC.getInstance();
-        }
-
-
-    }
-
-
 
 
 }
