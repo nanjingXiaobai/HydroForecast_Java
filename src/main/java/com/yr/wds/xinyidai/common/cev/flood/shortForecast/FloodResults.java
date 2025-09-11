@@ -3,6 +3,7 @@ package com.yr.wds.xinyidai.common.cev.flood.shortForecast;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.*;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.map.BiMap;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
@@ -29,6 +30,7 @@ import com.nari.slsd.hydro.backend.unified.dbi.HFDatabaseDoc;
 import com.nari.slsd.hydro.backend.unified.dobj.ADXLD;
 import com.nari.slsd.hydro.backend.unified.dobj.HFDataPoint;
 import com.nari.slsd.hydro.backend.unified.dobj.HFIdx;
+import com.nari.slsd.hydro.backend.unified.dobj.HPSTimeDoubleValue;
 import com.nari.slsd.rsdss.resources.StringConstant;
 import com.sgepri.ce.db.ResultSetInterface;
 import com.sgepri.ce.db.util.DBOpUtil;
@@ -134,7 +136,7 @@ public class FloodResults {
         WATERSHEDSTATISTICS_RIVER =  new String(watershedStatisticsRiver.getBytes(StandardCharsets.ISO_8859_1));
         WATERSHEDSTATISTICS_BASINNAME =   new String(watershedStatisticsBasinName.getBytes(StandardCharsets.ISO_8859_1));
         WATERSHEDSTATISTICS_FOREOBJNAME =  new String(watershedStatisticsForeObjName.getBytes(StandardCharsets.ISO_8859_1));
-        String[] strArray = watershedStatisticsWeights.split(", ");
+        String[] strArray = watershedStatisticsWeights.split(",");
         WATERSHEDSTATISTICS_WEIGHTS = new double[strArray.length];
         for (int i = 0; i < strArray.length; i++) {
             WATERSHEDSTATISTICS_WEIGHTS[i] = Double.parseDouble(strArray[i]);
@@ -4049,7 +4051,7 @@ public class FloodResults {
 
             Set<String> keyset = secForecastMap.keySet();
             if (secForecastMap.get(keyset.iterator().next()).size() <= 0) {
-                System.out.println(basinName + foreObjNames[i] + sectionNames[i] + "没预报");
+                System.out.println(basinName + foreObjNames[0] + sectionNames[i] + "没预报");
                 continue;
             }
             LinkedHashMap<Long, String> datas = JSONObject.parseObject(JSON.toJSONString(secForecastMap.get(keyset.iterator().next()).get("m_FPAvgRCQCal").get("data")), new TypeReference<LinkedHashMap<Long, String>>() {
@@ -4118,11 +4120,14 @@ public class FloodResults {
         }
         String sql = "select avg(v) from " + table + " where senid = " + senid + " and time >= " + TimeFunc.toDbString(btime) + " and time <= " + TimeFunc.toDbString(etime);
 
-        try {
-            ResultSetInterface rs = DBOpUtil.exeHisDBSelSqlWeb(sql);
-            if (rs.getRowNum() > 0) flow = rs.getDouble(0, 0);
-        } catch (Exception e) {
-        }
+        List<Double> list = DBManager.executeSql(sql, Double.class, new ArrayList[0], SqlManager.getServiceNames()[0]);
+        if (list.size() > 0) flow = list.get(0);
+//
+//        try {
+//            ResultSetInterface rs = DBOpUtil.exeHisDBSelSqlWeb(sql);
+//            if (rs.getRowNum() > 0) flow = rs.getDouble(0, 0);
+//        } catch (Exception e) {
+//        }
         return flow;
     }
 
@@ -4242,31 +4247,46 @@ public class FloodResults {
         String stationName = params.getString("stationName");
 
         //根据时间类型、电站名称组装实测、预测点号500
-        Map<String, String> map = getFlowSenids(type, stationName);
+        BiMap<String, String> map = getFlowSenids(type, stationName);
 
         Set<String> keySet = map.keySet();
         Long[] senidArr = keySet.stream().map(x -> Long.parseLong(x)).toArray(Long[]::new);
 
-        RSTime.RSTimeType timeType = RSTime.RSTimeType.RSHour;
+        String mark = "hf_read_hourdb_v_byEvaluate";
+        String markShi="hf_read_hourdb_v";
         DateField dateField = DateField.HOUR_OF_DAY;
         if (StrUtil.equals("日", type)) {
-            timeType = RSTime.RSTimeType.RSDay;
+            mark = "hf_read_daydb_v_byEvaluate";
+            markShi="hf_read_daydb_v";
             dateField = DateField.DAY_OF_YEAR;
         }
 
         Calendar BegT = DateUtil.calendar(DateUtil.offset(DateUtil.parseDateTime(startTime), dateField, 1));
         Calendar EndT = DateUtil.calendar(DateUtil.offset(DateUtil.parseDateTime(endTime), dateField, 1));
 
-        List<HFDataPoint> list = HFDatabaseDoc.readHisSenDBFromSLSDByCommon(senidArr, BegT, EndT, timeType, false, 1);
+        List<HPSTimeDoubleValue> list=new ArrayList<>();
+
+//        List<HFDataPoint> list = HFDatabaseDoc.readHisSenDBFromSLSDByCommon(senidArr, BegT, EndT, timeType, false, 1);
+        Object[] param = new Object[]{new Long[]{Long.parseLong(map.getKey("prediction"))}, BegT, EndT};
+        List<HPSTimeDoubleValue> list1 = DBManager.getTable(mark, HPSTimeDoubleValue.class, param);
+        if(CollUtil.isNotEmpty(list1)){
+            list.addAll(list1);
+        }
+
+        Object[] param1 = new Object[]{new Long[]{Long.parseLong(map.getKey("flow"))}, BegT, EndT};
+        List<HPSTimeDoubleValue> list2 = DBManager.getTable(markShi, HPSTimeDoubleValue.class, param1);
+        if(CollUtil.isNotEmpty(list2)){
+            list.addAll(list2);
+        }
 
         Map<String, JSONObject> objectMap = new HashMap<>();
 
-        for (HFDataPoint hfDataPoint : list) {
-            String time = DateUtil.formatDateTime(DateUtil.offset(DateUtil.date(hfDataPoint.m_time), dateField, -1));
-            String prop = map.get(hfDataPoint.m_dpid + "");
+        for (HPSTimeDoubleValue hpsTimeDoubleValue : list) {
+            String time = DateUtil.formatDateTime(DateUtil.offset(DateUtil.date(hpsTimeDoubleValue.getTime()), dateField, -1));
+            String prop = map.get(hpsTimeDoubleValue.getId() + "");
             JSONObject json = new JSONObject();
             json.put(TIME_STYLE, time);
-            json.put(prop, hfDataPoint.getValue(1));
+            json.put(prop, hpsTimeDoubleValue.getValue());
 
             if (null == objectMap.get(time)) {
                 objectMap.put(time, json);
@@ -4287,7 +4307,7 @@ public class FloodResults {
     }
 
     //根据时间类型、电站名称组装实测、预测点号
-    private static Map<String, String> getFlowSenids(String type, String stationName) {
+    private static BiMap<String, String> getFlowSenids(String type, String stationName) {
 
         Document document = XmlUtil.readXML(hfScheme);
 
@@ -4299,14 +4319,15 @@ public class FloodResults {
 
         Object obj = foreSchemeSet.get("scheme");
         cn.hutool.json.JSONArray ARR = new cn.hutool.json.JSONArray();
-        if (obj instanceof JSONArray) {
+        if (obj instanceof cn.hutool.json.JSONArray) {
             ARR = json.getJSONObject("foreSchemeSet").getJSONArray("scheme");
         } else {
             cn.hutool.json.JSONObject setJSONObject = foreSchemeSet.getJSONObject("scheme");
             ARR.add(setJSONObject);
         }
 
-        Map<String, String> map = new HashMap<>();
+        BiMap<String, String> map = new BiMap<>(new HashMap<>());
+
         DecimalFormat decimalFormat = new DecimalFormat("00");
         String timeType = "RSHour";
         String timeNum = "02";
@@ -4349,23 +4370,26 @@ public class FloodResults {
                 String actualId=null;
                 if(null !=section.get("publishIdConfig")){
                    JSONObject publishIdConfig= section.getJSONObject("publishIdConfig");
-                   Object dataSet= publishIdConfig.get("dataSet");
-                   if(null !=dataSet){
-                       if(dataSet instanceof JSONArray){
-                           for (int i = 0; i < publishIdConfig.getJSONArray("dataSet").size(); i++) {
-                               JSONObject jsonObject = publishIdConfig.getJSONArray("dataSet").getJSONObject(i);
-                               if (StrUtil.equals(jsonObject.getString("dataSetName"), "m_FPAvgRCQCal")) {
-                                   actualId = jsonObject.getString("publishId");
-                                   break;
+                   if(null != publishIdConfig){
+                       Object dataSet= publishIdConfig.get("dataSet");
+                       if(null !=dataSet){
+                           if(dataSet instanceof JSONArray){
+                               for (int i = 0; i < publishIdConfig.getJSONArray("dataSet").size(); i++) {
+                                   JSONObject jsonObject = publishIdConfig.getJSONArray("dataSet").getJSONObject(i);
+                                   if (StrUtil.equals(jsonObject.getString("dataSetName"), "m_FPAvgRCQCal")) {
+                                       actualId = jsonObject.getString("publishId");
+                                       break;
+                                   }
+                               }
+                           }else{
+                               if(StrUtil.equals(publishIdConfig.getJSONObject("dataSet").getString("dataSetName"), "m_FPAvgRCQCal")) {
+                                   actualId = publishIdConfig.getJSONObject("dataSet").getString("publishId");
                                }
                            }
-                       }else{
-                           if(StrUtil.equals(publishIdConfig.getJSONObject("dataSet").getString("dataSetName"), "m_FPAvgRCQCal")) {
-                               actualId = publishIdConfig.getJSONObject("dataSet").getString("publishId");
-                           }
-                       }
 
+                       }
                    }
+
                 }
 
                 if(StrUtil.isBlank(actualId)){
