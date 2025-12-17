@@ -33,6 +33,9 @@ public class FloodForecast {
             case "flood_default":                           //页面静态数据
                 return_data = FloodResults.defaultData(query_params);
                 break;
+            case "flood_initReadConditions":        //预报开始时间、开始时段设置到预报的模型中
+                return_data = FloodResults.initReadConditions(query_params);
+                break;
             case "flood_init":                              //初始化
                 return_data = FloodResults.init(query_params);
                 break;
@@ -96,19 +99,19 @@ public class FloodForecast {
             case "flood_allSecForeStaticMap":                    //获取所有断面的预报统计信息
                 return_data = FloodResults.getAllSecForeStaticMap(query_params);
                 break;
-            case "flood_modifyRainfall"://修改实测（面雨量）or（雨量站）
+            case "flood_modifyRainfall":                        //修改实测（面雨量）or（雨量站）
                 return_data = FloodResults.updateModifyRainfall(query_params);
                 break;
-            case "flood_setMode":            //设置单个断面的水库调度模式
+            case "flood_setMode":                               //设置单个断面的水库调度模式
                 return_data = FloodResults.floodSetMode(query_params);
                 break;
-            case "flood_regulation":                        //水库调洪调度
+            case "flood_regulation":                            //水库调洪调度
                 return_data = FloodResults.regulation(query_params);
                 break;
-            case "flood_reservoirInteraction":                //水库调度交互
+            case "flood_reservoirInteraction":                  //水库调度交互
                 return_data = FloodResults.reservoirInteraction(query_params);
                 break;
-            case "flood_updateInitialWater":                 //39.水库调度交互-修改水库断面时段初水位
+            case "flood_updateInitialWater":                    //39.水库调度交互-修改水库断面时段初水位
                 return_data = FloodResults.updateInitialWater(query_params);
                 break;
             case "flood_updateReservoirInteraction":            //修改水库断面未来的出库流量或者是水位
@@ -134,7 +137,14 @@ public class FloodForecast {
                 break;
 
 
-                /****************************方案管理***************************/
+            case "flood_runoffParam":                //获取某个流域下的所有单元的产流参数
+                return_data=FloodResults.runoffParam(query_params);
+                break;
+            case "flood_updateRunoffParam":                                 //获取某个流域下的所有单元的产流参数
+                return_data=FloodResults.updateRunoffParam(query_params);
+                break;
+
+            /****************************方案管理***************************/
             case "flood_result_forecasters":                //获取数据库中的所有预报员集合
                 return_data = new Message().ok(666, "success").addData("data", HFWebService.getAllYbrList(defaulttype));
                 break;
@@ -159,6 +169,7 @@ public class FloodForecast {
             case "flood_getAllRegionForeRainMap":               //32.获取某个流域下所有区间的面预报降雨序列
                 return_data = FloodResults.getAllRegionForeRainMap(query_params);
                 break;
+
             /**************************预报设置*****************************/
             case "flood_getForecastSettings":               //获取设置数据
                 return_data = FloodResults.getForecastSettings(query_params);
@@ -184,6 +195,17 @@ public class FloodForecast {
              /**************************大模型************************************/
             case "flood_modelComputation":
                 return_data = FloodResults.modelComputation(query_params);
+                break;
+            /**************************防洪推演************************************/
+
+            case "flood_deductionInit":         //获取流域面雨量(防洪推演)
+                return_data = FloodResults.deductionInit(query_params);
+                break;
+            case "flood_catchmentRainfall":         //跟流域获取流域面雨量(防洪推演)
+                return_data = FloodResults.catchmentRainfall(query_params);
+                break;
+            case "flood_updateCatchmentRainfall":         //修改流域面雨量(防洪推演)
+                return_data = FloodResults.updateCatchmentRainfall(query_params);
                 break;
 
 

@@ -110,7 +110,7 @@ public class LongTermResult {
         String defaultTimeType = longHFWebService.getDefaultTimeType();
 
 
-        return new Message().ok(666, "success")
+        return new Message().ok(HttpStatus.HTTP_OK, "success")
                 .addData("timeType", list)
                 .addData("objMap", objMap)
                 .addData("timeMap", timeMap)
@@ -141,7 +141,7 @@ public class LongTermResult {
         Integer forecastNum = params.getInteger("forecastNum");
 
         //用户名
-        String userName = ForecastRequestUtil.getRequestUserName();
+        String userName = params.getString("userName");
 
         longHFWebService.initialize(userName);
 
@@ -155,14 +155,14 @@ public class LongTermResult {
         boolean flag = longHFWebService.setForeConfig(userName, foreObjNameArr, timeType, forecastBTime, showHisSpan, forecastNum, forecastETime);
 
         if (!flag) {
-            return new Message().error(333, "设置预报");
+            return new Message().error(HttpStatus.HTTP_OK, "设置预报");
         }
 
 
         boolean readFlag = longHFWebService.readData(userName);
 
         if (!readFlag) {
-            return new Message().error(333, "读取预报错误");
+            return new Message().error(HttpStatus.HTTP_INTERNAL_ERROR, "读取预报错误");
         }
 
 
@@ -170,7 +170,7 @@ public class LongTermResult {
         //对应方法：boolean forecast(String userName)
         boolean flag2 = longHFWebService.forecast(userName);
         if (!flag2) {
-            return new Message().error(333, "预测计算失败");
+            return new Message().error(HttpStatus.HTTP_INTERNAL_ERROR, "预测计算失败");
         }
 
         //获取所有的时间类型
@@ -243,7 +243,7 @@ public class LongTermResult {
 
         }
 
-        return new Message().ok(666, "success").addData("data", result);
+        return new Message().ok(HttpStatus.HTTP_OK, "success").addData("data", result);
     }
 
 
@@ -387,7 +387,7 @@ public class LongTermResult {
 
 
         //longHFWebService.saveForecastResult( userName,  description);
-        return new Message().ok(666, "success");
+        return new Message().ok(HttpStatus.HTTP_OK, "success");
     }
 
     //保存
@@ -407,10 +407,10 @@ public class LongTermResult {
         boolean flag = longHFWebService.saveForecastResult(userName, description);
 
         if (!flag) {
-            return new Message().error(333, "error");
+            return new Message().error(HttpStatus.HTTP_INTERNAL_ERROR, "error");
         }
 
-        return new Message().ok(666, "success");
+        return new Message().ok(HttpStatus.HTTP_OK, "success");
     }
 
 
@@ -464,7 +464,7 @@ public class LongTermResult {
             tableHeader.add(jsonObject);
         }
 
-        return new Message().ok(666, "success").addData("tabelHeader", tableHeader).addData("tabelData", listMap);
+        return new Message().ok(HttpStatus.HTTP_OK, "success").addData("tabelHeader", tableHeader).addData("tabelData", listMap);
     }
 
 
@@ -528,7 +528,7 @@ public class LongTermResult {
         }
 
 
-        return new Message().ok(666, "success").addData("tableData", tableData).addData("tableHeader", tableHeader);
+        return new Message().ok(HttpStatus.HTTP_OK, "success").addData("tableData", tableData).addData("tableHeader", tableHeader);
     }
 
 
@@ -613,7 +613,7 @@ public class LongTermResult {
 //        }).sorted(Comparator.comparing(x -> DateUtil.parse(x.getString("time")).getTime())).collect(Collectors.toList());
 
 
-        return new Message().ok(666, "success").addData("result", result);
+        return new Message().ok(HttpStatus.HTTP_OK, "success").addData("result", result);
     }
 
 
@@ -627,10 +627,10 @@ public class LongTermResult {
         boolean flag = LongHFWebService.doDeleteResultList(map);
 
         if (flag) {
-            return new Message().ok(666, "success");
+            return new Message().ok(HttpStatus.HTTP_OK, "success");
         }
 
-        return new Message().error(333, "error");
+        return new Message().error(HttpStatus.HTTP_INTERNAL_ERROR, "error");
     }
 
     public static Message deleteDetail(JSONObject params) {
@@ -644,10 +644,10 @@ public class LongTermResult {
         boolean flag = LongHFWebService.doDeleteSingleResult(map);
 
         if (flag) {
-            return new Message().ok(666, "success");
+            return new Message().ok(HttpStatus.HTTP_OK, "success");
         }
 
-        return new Message().error(333, "error");
+        return new Message().error(HttpStatus.HTTP_INTERNAL_ERROR, "error");
 
     }
 
