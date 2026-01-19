@@ -1,7 +1,6 @@
 package com.yr.wds.xinyidai.common.controller;
 
 
-import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.yr.wds.xinyidai.common.cev.flood.util.ExcleUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -13,10 +12,11 @@ import java.util.*;
 @Slf4j
 @Configuration
 @RestController
+@RequestMapping("/forecast")
 public class FileServiceController {
 
 
-    @RequestMapping(value = "/fileService/downLoadTableExcle", method = RequestMethod.GET)
+    @RequestMapping(value = "/downLoadTableExcle", method = RequestMethod.GET)
     @ResponseBody
     public void downLoadTableExcle( HttpServletResponse httpResponse) throws Exception {
 
@@ -37,5 +37,15 @@ public class FileServiceController {
 
     }
 
+    @RequestMapping(value = "/resultTableExcel", method = RequestMethod.POST)
+    @ResponseBody
+    public void resultTableExcle( HttpServletResponse httpResponse,@RequestParam String condition) throws Exception {
+
+        JSONObject param_json = JSONObject.parseObject(condition);//JSONObject.parseObject(params);
+
+        new ExcleUtils().exportSystemExcel(param_json,httpResponse);
+
+
+    }
 
 }

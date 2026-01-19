@@ -1,5 +1,6 @@
 package com.yr.wds.xinyidai.common.cev.flood.util;
 
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelReader;
@@ -9,14 +10,24 @@ import com.alibaba.excel.enums.WriteDirectionEnum;
 import com.alibaba.excel.read.metadata.ReadSheet;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.alibaba.excel.write.metadata.WriteSheet;
+import com.alibaba.excel.write.metadata.WriteTable;
+import com.alibaba.excel.write.metadata.WriteWorkbook;
 import com.alibaba.excel.write.metadata.fill.FillConfig;
-import org.springframework.core.io.ClassPathResource;
+import com.alibaba.excel.write.metadata.holder.WriteSheetHolder;
+import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.nari.slsd.hydro.backend.HFWebService;
+import com.yr.wds.xinyidai.common.cev.flood.shortForecast.FloodResults;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.springframework.util.ResourceUtils;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -183,4 +194,70 @@ public class ExcleUtils {
         }
     }
 
+
+    /***
+     * 导出excel生成xlsx文件
+     * @param response
+     */
+    public void exportSystemExcel(JSONObject param_json, HttpServletResponse response) {
+        OutputStream outputStream = null;
+        try {
+            long startTime = System.currentTimeMillis();
+            outputStream = response.getOutputStream();
+            WriteWorkbook writeWorkbook = new WriteWorkbook();
+            writeWorkbook.setOutputStream(outputStream);
+            writeWorkbook.setExcelType(ExcelTypeEnum.XLSX);
+//            ExcelWriter writer = new ExcelWriter(writeWorkbook);
+            ExcelWriter writer = EasyExcel.write(response.getOutputStream())
+                    .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy()) // 核心：自适应列宽策略
+                    .build();
+            // 设置EXCEL名称
+            String fileName = param_json.getString("预报对象")+param_json.getString("预报制作时间");
+            String newFileName = new String((fileName).getBytes(), "UTF-8");
+
+
+           Map<String, Map<String, List<List<String>>>> map = FloodResults.getAllResultByOne(param_json);
+
+           int i = 0;
+
+            if (MapUtil.isNotEmpty(map)) {
+
+                for(String sheetName : map.keySet()){
+
+                    // 设置SHEET名称
+                    WriteSheet sheet = new WriteSheet();
+                    sheet.setSheetNo(i);
+                    sheet.setSheetName(sheetName);   //sheet 名称
+                    // 设置表头标题
+                    WriteTable table = new WriteTable();
+
+                    Map<String, List<List<String>>> value = map.get(sheetName);
+                    List<List<String>> titles = value.get("tableHeader");
+                    table.setHead(titles);
+                    List<List<String>> dataList = value.get("tableData");
+                    writer.write(dataList, sheet, table);
+                    i++;
+                }
+            }
+
+            //下载Excel
+            response.setHeader("Content-Disposition", "attachment;filename=" + new String(newFileName.getBytes(StandardCharsets.UTF_8), "ISO8859-1") + ".xlsx");
+            response.setContentType("application/vnd.ms-excel");
+            response.setCharacterEncoding("utf-8");
+            writer.finish();
+            outputStream.flush();
+            // 导出时间结束
+
+        } catch (Exception ex) {
+
+        } finally {
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }

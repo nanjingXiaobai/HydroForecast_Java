@@ -1210,6 +1210,11 @@ public class FloodResults {
         return new Message().ok(HttpStatus.HTTP_OK, "success");
     }
 
+    public static Message getNWPProductInfo(JSONObject params) {
+
+        String userName = params.getString("userName");
+        return new Message().ok(HttpStatus.HTTP_OK, "success").addData("content", hfWebService.getNWPProductInfo(userName));
+    }
 
     private static Map<String, Double> getAllAvgFlowByTime(Map<String, JSONObject> o, String senid, String timeType, int year) {
 
@@ -1554,6 +1559,70 @@ public class FloodResults {
 //        });
 
         return result;
+
+    }
+
+    public static Map<String, Map<String, List<List<String>>>>  getAllResultByOne(JSONObject params) {
+
+        Map<String, Map<String, List<List<String>>>> result = new LinkedHashMap<>();
+
+        Map mapTypes = JSON.parseObject(params.toJSONString());
+
+        List<Map<String, String>> list = HFWebService.getSingleResultMapList(mapTypes, defaulttype);
+
+        for(Map<String, String> x:list){
+            String fldIdStr = null;
+            //峡江专用
+            if (defaulttype == 2) {
+                fldIdStr = (String) mapTypes.get("方案描述");
+            }
+
+            Object[] arr = HFWebService.getSingleResultList(x, fldIdStr, defaulttype);
+
+            Map<Calendar, Map<String, String>> map = (Map) arr[0];
+
+            Map<String, String> map1 = (Map) arr[1];
+
+            List<List<String>> tableHeader = new LinkedList<>();
+            List<List<String>> tableData = new LinkedList<>();
+            tableHeader.add(Collections.singletonList("时间"));
+
+            for (String str : map1.keySet()) {
+                List<String> v = new ArrayList<>();
+                v.add(str);
+                tableHeader.add(v);
+            }
+
+
+            //组装数据
+            for (Calendar calendar : map.keySet()) {
+
+                List<String> v = new ArrayList<>();
+                Map<String, String> trMap = map.get(calendar);
+                String time = TimeUtil.CalendarToStringByFormat(calendar, "yyyy-MM-dd HH:mm:ss");
+                v.add(time);
+
+                for(int i=1;i<tableHeader.size();i++){
+                    v.add(trMap.get(tableHeader.get(i).get(0)));
+                }
+
+                tableData.add(v);
+            }
+
+
+            Map<String, List<List<String>>> value=new HashMap<>();
+            value.put("tableHeader", tableHeader);
+            value.put("tableData", tableData);
+
+            result.put(x.get("预报断面")+" - "+x.get("预报结果类型"), value);
+
+        }
+
+
+
+
+        return result;
+
 
     }
 
@@ -4847,5 +4916,9 @@ public class FloodResults {
 
         return result;
     }
+
+
+
+
 
 }

@@ -143,6 +143,9 @@ public class FloodForecast {
             case "flood_updateRunoffParam":                                 //获取某个流域下的所有单元的产流参数
                 return_data=FloodResults.updateRunoffParam(query_params);
                 break;
+            case "flood_getNWPProductInfo":                                 //获取当前获取到的预报降雨产品的时间信息
+                return_data=FloodResults.getNWPProductInfo(query_params);
+                break;
 
             /****************************方案管理***************************/
             case "flood_result_forecasters":                //获取数据库中的所有预报员集合
