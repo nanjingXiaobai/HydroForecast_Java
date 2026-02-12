@@ -27,22 +27,22 @@ public class SaticScheduleTask {
      * @throws IOException
      */
 
-//    @Scheduled(cron = "0 0/3 * * * ?")
-//    public void sendMessage()  {
-//
-//        System.out.println("数据库链接。。。。");
-//
-//        try {
-//
-//            HFWebService.getAllYbrList(type);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//
-//            ConnectionJDBC.getInstance();
-//        }
-//
-//
-//    }
+    @Scheduled(cron = "0 0/1 * * * ?")
+    public void sendMessage()  {
+
+        System.out.println("数据库链接。。。。");
+
+        try {
+
+            HFWebService.getAllYbrList(type);
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            ConnectionJDBC.getInstance();
+        }
+
+
+    }
 
 
 
