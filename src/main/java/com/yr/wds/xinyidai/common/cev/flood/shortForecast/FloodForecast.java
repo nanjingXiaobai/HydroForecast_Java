@@ -211,6 +211,27 @@ public class FloodForecast {
                 return_data = FloodResults.updateCatchmentRainfall(query_params);
                 break;
 
+            /************************** 智能体 Agent 专属接口 ************************************/
+
+            case "flood_achievement_display_all":               //预报成果展示-多站数据传输-czc
+                return_data = FloodResults.achievementDisplayAll(query_params);
+                break;
+            case "agent_get_metrics":               // 1. 单站/多站预报特征提取
+                return_data = FloodResults.getStationForecastMetrics(query_params);
+                break;
+            case "agent_get_threshold":             // 2. 阈值实时对比
+                return_data = FloodResults.getThresholdAnalysis(query_params);
+                break;
+            case "agent_get_topology":              // 3. 上下游拓扑关系查询
+                return_data = FloodResults.getBasinTopology(query_params);
+                break;
+            case "flood_agent_compare_last":              // 4. 轮次对比服务
+                return_data = FloodResults.compareWithLastForecast(query_params);
+                break;
+
+            case "flood_single_station_combined":       // 汇总：只返回单站的统计信息与对应时间序列
+                return_data = FloodResults.getSingleStationCombinedData(query_params);
+                break;
 
         }
         return return_data;

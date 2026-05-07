@@ -405,24 +405,23 @@
 		         <isProb>false</isProb>//是否显示频率
                            <RCCaleditState>0</RCCaleditState> //校正预报值序列在表格中可否编辑
 		</StatisticDataShow>
-	<StatisticDataShow>
-		<name>神经网络模型</name>
-		<Caldesp>神经网络预报流量</Caldesp>
-		<RCCaldesp>神经网络预报校正流量</RCCaldesp>
-		<isCalShow>true</isCalShow>
-		<isRCCalShow>false</isRCCalShow>
-		<isCalAble>true</isCalAble>
-		<isRCCalAble>true</isRCCalAble>
-		<CaleditState>0</CaleditState>
-		<isProb>false</isProb>
-		<RCCaleditState>0</RCCaleditState>
-	</StatisticDataShow>
-	<StatisticDataShow>
-		<name>门限回归模型</name>
-		<Caldesp>门限回归预报流量</Caldesp>
-		<RCCaldesp>门限回归预报校正流量</RCCaldesp>
-		<isCalShow>true</isCalShow>
-		<isRCCalShow>false</isRCCalShow>
+		<StatisticDataShow>
+			<name>神经网络模型</name>
+			<Caldesp>神经网络预报流量</Caldesp>                 
+		  <RCCaldesp>神经网络预报校正流量</RCCaldesp> 
+			<isCalShow>true</isCalShow>
+			<isRCCalShow>false</isRCCalShow>
+			<isCalAble>true</isCalAble>
+			<isRCCalAble>true</isRCCalAble>
+			<CaleditState>0</CaleditState>
+<isProb>false</isProb>			<RCCaleditState>0</RCCaleditState>
+		</StatisticDataShow>
+		<StatisticDataShow>
+			<name>门限回归模型</name>
+		  <Caldesp>门限回归预报流量</Caldesp>  
+		  <RCCaldesp>门限回归预报校正流量</RCCaldesp> 
+			<isCalShow>true</isCalShow>
+			<isRCCalShow>false</isRCCalShow>
 			<isCalAble>true</isCalAble>
 			<isRCCalAble>true</isRCCalAble>
 			<CaleditState>0</CaleditState>

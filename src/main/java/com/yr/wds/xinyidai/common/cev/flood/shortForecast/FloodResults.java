@@ -6,6 +6,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.map.BiMap;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.XmlUtil;
 import cn.hutool.http.HttpStatus;
@@ -38,6 +39,7 @@ import com.sgepri.ce.db.util.DBSplitUtil;
 import com.sgepri.ce.util.TimeFunc;
 import com.yr.wds.xinyidai.common.cev.flood.enums.SequenceType;
 import com.yr.wds.xinyidai.common.cev.flood.util.*;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.dom4j.io.SAXReader;
 import org.springframework.beans.factory.annotation.Value;
@@ -184,7 +186,7 @@ public class FloodResults {
             //获取页面显示的时间
             Calendar calendar = hfWebService.getForecastBTime(params.getString("userName"), x);
 
-            RSTime.RSTimeType timeType=  RSTime.RSTimeType.getTimeTypeByDescription(x);
+            RSTime.RSTimeType timeType = RSTime.RSTimeType.getTimeTypeByDescription(x);
 
             String time = DataTransferUtil.CalendarToString(calendar, timeType, RSTime.RSTimeFormat.LINE);
 
@@ -230,7 +232,7 @@ public class FloodResults {
         String userName = jsonObject.getString("userName");
 
         //根据时间字符串获取时间类型
-        RSTime.RSTimeType timeType=  RSTime.RSTimeType.getTimeTypeByDescription(falx);
+        RSTime.RSTimeType timeType = RSTime.RSTimeType.getTimeTypeByDescription(falx);
         //将时间转Calendar
         Calendar foreBTime = DataTransferUtil.stringToCalendar(time, timeType, RSTime.RSTimeFormat.LINE);
 
@@ -247,7 +249,7 @@ public class FloodResults {
         String userName = params.getString("userName");
         Map<HFSchUnit, Map<String, String>> map = hfWebService.getUnitParamMap(userName, schemeName);
 
-        Map<Long, Map<String, String>> answer = new HashMap<>();
+        Map<String, Map<String, String>> answer = new HashMap<>();
         for (HFSchUnit hfSchUnit : map.keySet()) {
 
             Map<String, String> v = map.get(hfSchUnit);
@@ -258,6 +260,7 @@ public class FloodResults {
 
         return new Message().ok(HttpStatus.HTTP_OK, "success").addData("data", answer);
     }
+
     public static Message init(JSONObject jsonObject) throws Exception {
 
         String userName = jsonObject.getString("userName");
@@ -329,7 +332,7 @@ public class FloodResults {
         }
 
         //获取所有方案
-        Map<String, Long> fanMap = hfWebService.getAllModelNameList(userName);
+        Map<String, String> fanMap = hfWebService.getAllModelNameList(userName);
 
         List<JSONObject> fanList = new ArrayList<>();
 
@@ -352,13 +355,13 @@ public class FloodResults {
 
             Message me;
 
-            if ((boolean) initMap.get("是否实时预报")) {
-                me = getRainfallBySource(jsonObject);
-            } else {
-                me = getRainfallByLy(jsonObject);
-            }
+//            if ((boolean) initMap.get("是否实时预报")) {
+//                me = getRainfallBySource(jsonObject);
+//            } else {
+//                me = getRainfallByLy(jsonObject);
+//            }
 
-            message.addData("rainData", me.getData());
+//            message.addData("rainData", me.getData());
         }
 
         List<Map<String, String>> sectionList = hfWebService.getAllSectionLatestInfo(userName);
@@ -390,8 +393,8 @@ public class FloodResults {
         Map<String, JSONObject> v = new HashMap<>();
 
         List<JSONObject> tableHeader = new LinkedList<>();
-        String userName=jsonObject.getString("userName");
-        RSTime.RSTimeType rsTimeType= getTimeKey(userName);
+        String userName = jsonObject.getString("userName");
+        RSTime.RSTimeType rsTimeType = getTimeKey(userName);
 
         //时间key
 
@@ -726,6 +729,7 @@ public class FloodResults {
 
     /**
      * 获取时间类型
+     *
      * @param userName
      * @return
      */
@@ -734,11 +738,10 @@ public class FloodResults {
         //获取当前时间类型
         HFScheme foundScheme = hfWebService.getSelectedScheme(userName);
 
-       return  foundScheme.getTimeType();
+        return foundScheme.getTimeType();
     }
 
     public static Message achievementDisplay(JSONObject params) throws Exception {
-
 
 
         //表格组件表头
@@ -762,11 +765,11 @@ public class FloodResults {
         //用户名
         String userName = params.getString("userName");
         //置信区间
-        String[] probArray=null;
-        if(null == params.get("probArray")){
-             probArray = hfWebService.getProbArray(userName);
-        }else{
-             probArray = params.getJSONArray("probArray").toArray(new String[params.getJSONArray("probArray").size()]);
+        String[] probArray = null;
+        if (null == params.get("probArray")) {
+            probArray = hfWebService.getProbArray(userName);
+        } else {
+            probArray = params.getJSONArray("probArray").toArray(new String[params.getJSONArray("probArray").size()]);
         }
 
         //序列类型（0:不考虑降雨,1:倾向值,2:上限值,3:下限值）
@@ -881,7 +884,7 @@ public class FloodResults {
             Map<Calendar, String> dataMap = (Map) map.get("data");
             for (Calendar calendar : dataMap.keySet()) {
                 //时间
-                String time= DataTransferUtil.CalendarToString(calendar,rsTimeType, RSTime.RSTimeFormat.LINE);
+                String time = DataTransferUtil.CalendarToString(calendar, rsTimeType, RSTime.RSTimeFormat.LINE);
                 JSONObject jsonObject1 = new JSONObject();
                 String v = dataMap.get(calendar);
                 jsonObject1.put(prop, v);
@@ -940,7 +943,7 @@ public class FloodResults {
                         for (Calendar calendar : data.keySet()) {
                             String v = data.get(calendar);
                             //时间
-                            String time= DataTransferUtil.CalendarToString(calendar,rsTimeType, RSTime.RSTimeFormat.LINE);
+                            String time = DataTransferUtil.CalendarToString(calendar, rsTimeType, RSTime.RSTimeFormat.LINE);
                             //value
 //                            Double value = hfDataPoint.getFirstValue();
                             JSONObject j = new JSONObject();
@@ -984,7 +987,7 @@ public class FloodResults {
             //将数据加入tableData
             HashMap<Calendar, String> hashMap = (HashMap<Calendar, String>) map.get("data");
             for (Calendar calendar : hashMap.keySet()) {
-                String time= DataTransferUtil.CalendarToString(calendar,rsTimeType, RSTime.RSTimeFormat.LINE);
+                String time = DataTransferUtil.CalendarToString(calendar, rsTimeType, RSTime.RSTimeFormat.LINE);
                 String v = hashMap.get(calendar);
                 JSONObject jsonObject = o.get(time);
                 if (null == jsonObject) {
@@ -1020,7 +1023,7 @@ public class FloodResults {
         tableData = o.values().stream()
                 .sorted(Comparator.comparing(x -> {
                     try {
-                        return DataTransferUtil.stringToCalendar(x.getString(TIME_STYLE),rsTimeType, RSTime.RSTimeFormat.LINE);
+                        return DataTransferUtil.stringToCalendar(x.getString(TIME_STYLE), rsTimeType, RSTime.RSTimeFormat.LINE);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -1042,10 +1045,10 @@ public class FloodResults {
             String plantid = flowSenids.getString(params.getString("name")).substring(0, 6);
             //获取时段开始结束,重大天气标识
 
-            Calendar startDate=  DataTransferUtil.stringToCalendar(tableData.get(0).getString("Time"),rsTimeType, RSTime.RSTimeFormat.LINE);
+            Calendar startDate = DataTransferUtil.stringToCalendar(tableData.get(0).getString("Time"), rsTimeType, RSTime.RSTimeFormat.LINE);
 
-            Calendar endDate = DataTransferUtil.stringToCalendar(tableData.get(tableData.size() - 1).getString("Time"),rsTimeType, RSTime.RSTimeFormat.LINE);
-            if (rsTimeType==RSTime.RSTimeType.RSHour) {
+            Calendar endDate = DataTransferUtil.stringToCalendar(tableData.get(tableData.size() - 1).getString("Time"), rsTimeType, RSTime.RSTimeFormat.LINE);
+            if (rsTimeType == RSTime.RSTimeType.RSHour) {
                 startDate = TimeFunc.getPeriodEnd(5, startDate);
                 endDate = TimeFunc.getPeriodBeg(5, TimeFunc.add(endDate, 5, -1));
             }
@@ -1060,10 +1063,10 @@ public class FloodResults {
 
                         if (rs.getDouble(i, 1) == -1) {
                             if (firstDeviationTime == null) {
-                                firstDeviationTime= DataTransferUtil.CalendarToString(rs.getDate(i, 0),rsTimeType, RSTime.RSTimeFormat.LINE);
+                                firstDeviationTime = DataTransferUtil.CalendarToString(rs.getDate(i, 0), rsTimeType, RSTime.RSTimeFormat.LINE);
                             }
 
-                            lastDeviationTime=  DataTransferUtil.CalendarToString(rs.getDate(i, 0),rsTimeType, RSTime.RSTimeFormat.LINE);
+                            lastDeviationTime = DataTransferUtil.CalendarToString(rs.getDate(i, 0), rsTimeType, RSTime.RSTimeFormat.LINE);
                         } else {
                             if (firstDeviationTime == null) continue;
                             try {
@@ -1108,10 +1111,10 @@ public class FloodResults {
 
                         if (rs.getDouble(i, 1) == 1) {
                             if (firstDeviationTime == null) {
-                                firstDeviationTime= DataTransferUtil.CalendarToString(rs.getDate(i, 0),rsTimeType, RSTime.RSTimeFormat.LINE);
+                                firstDeviationTime = DataTransferUtil.CalendarToString(rs.getDate(i, 0), rsTimeType, RSTime.RSTimeFormat.LINE);
                             }
 
-                            lastDeviationTime=  DataTransferUtil.CalendarToString(rs.getDate(i, 0),rsTimeType, RSTime.RSTimeFormat.LINE);
+                            lastDeviationTime = DataTransferUtil.CalendarToString(rs.getDate(i, 0), rsTimeType, RSTime.RSTimeFormat.LINE);
                         } else {
                             if (firstDeviationTime == null) continue;
                             try {
@@ -1172,6 +1175,420 @@ public class FloodResults {
                 .addData("showConfigMap", showConfigMap);
     }
 
+    public static Message achievementDisplayAll(JSONObject params) throws Exception {
+
+        //表格组件表头
+        List tr1 = new ArrayList();
+        List tr2 = new ArrayList();
+        List tr3 = new ArrayList();
+        //时间类型key
+        String timeKey = typeMap.get("时间");
+        tr1.add(timeKey);
+        tr2.add(timeKey);
+        tr3.add(timeKey);
+
+        //ly:流域名称，dx：对象名称，name ：场站名称
+        Map<String, Object> result = new HashMap<>();
+        //流域名称
+        String basinName = params.getString("ly");
+        //预报对象名
+        String foreObjName = params.getString("dx");
+        //用户名
+        String userName = params.getString("userName");
+
+        // 【新增】兼容 name 传入字符串或数组，统一转为 List 进行遍历
+        List<String> sectionNames = new ArrayList<>();
+        if (params.get("name") instanceof JSONArray) {
+            JSONArray nameArray = params.getJSONArray("name");
+            for (int i = 0; i < nameArray.size(); i++) {
+                sectionNames.add(nameArray.getString(i));
+            }
+        } else {
+            sectionNames.add(params.getString("name"));
+        }
+
+        //置信区间
+        String[] probArray = null;
+        if (null == params.get("probArray")) {
+            probArray = hfWebService.getProbArray(userName);
+        } else {
+            probArray = params.getJSONArray("probArray").toArray(new String[params.getJSONArray("probArray").size()]);
+        }
+
+        //序列类型（0:不考虑降雨,1:倾向值,2:上限值,3:下限值）
+        String type = params.getString("type");
+
+        RSTime.RSTimeType rsTimeType = getTimeKey(userName);
+
+        //接受模型方案
+        List<String> modelS = null;
+        if (null != params.getJSONArray("modelScheme")) {
+            modelS = JSONArray.parseArray(params.getJSONArray("modelScheme").toJSONString(), String.class);
+        }
+        if (StringUtils.isBlank(type)) {
+            type = SequenceType.SEQUENCE_TYPE1.getIndex() + "";  //默认不考虑降雨
+        }
+        Map<String, JSONObject> o = new HashMap<>(); // 存合并后的表格数据，外提
+        String finalType = type;
+        List<JSONObject> tableHeader = new LinkedList<>();
+        //时间第一列
+        JSONObject no1 = new JSONObject();
+        no1.put("prop", TIME_STYLE);
+        no1.put("label", timeKey);
+        tableHeader.add(no1);
+
+        //二级表头集合，外提
+        List<JSONObject> secondHeader = new LinkedList<>();
+        List<Integer> typeList = Arrays.asList(finalType.split(",")).stream().map(x -> Integer.parseInt(x)).collect(Collectors.toList());
+
+        // 【新增】外提的全局配置收集集合，用于合并多站点配置
+        Set<String> globalModelScheme = new LinkedHashSet<>();
+        Map<String, Object> globalProbMap = new LinkedHashMap<>();
+        Map<String, Boolean> globalShowConfigMap = new LinkedHashMap<>();
+
+        // 【新增核心循环】遍历所有传入的站点断面
+        for (String sectionName : sectionNames) {
+            boolean flag = false;
+            //获取全局的断面,判断是都是龙头断面
+            for (int i = 0; i < hfSectionList.size(); i++) {
+                HFSection hfSection = hfSectionList.get(i);
+                if (hfSection.getName().equals(sectionName)) {
+                    flag = hfSection.getSecClsType().equals(EnumConstant.HFSecClsType.firstSection) ? true : false;
+                }
+            }
+
+            //获取实测值
+            List<Map<String, Object>> hisList = hfWebService.getSecObservedListMap(userName, basinName, foreObjName, sectionName);
+
+            //获取预测值
+            Map<String, Map<String, Map<String, Object>>> secForecastMap = hfWebService.getSecForecastListMap(userName, basinName, foreObjName, sectionName, flag, typeList);
+
+            //获取置信区间并合并到全局变量
+            List<Map<String, Object>> mapList = hfWebService.getSecProbForecastListMap(userName, foreObjName, sectionName, probArray);
+            for (Map<String, Object> map : mapList) {
+                // 【修改】加入站点前缀防覆盖
+                String name = sectionName + "-" + map.get("confidence");
+                Map<Calendar, String> upperList = (Map) map.get("upperBound");
+                Map<Calendar, String> lowerList = (Map) map.get("lowerBound");
+                List<JSONObject> upperBound = getDataByCalendar(upperList);
+                List<JSONObject> lowerBound = getDataByCalendar(lowerList);
+                Map<String, List<JSONObject>> valProbMap = new LinkedHashMap<>();
+                valProbMap.put("upperBound", upperBound);
+                valProbMap.put("lowerBound", lowerBound);
+                globalProbMap.put(name, valProbMap);
+            }
+
+            //获取控制配置并合并到全局变量
+            Map<String, Boolean> showConfigMap = hfWebService.getSecShowConfig(userName, basinName, foreObjName, sectionName);
+            if (showConfigMap != null) {
+                for (Map.Entry<String, Boolean> entry : showConfigMap.entrySet()) {
+                    // 【修改】加入站点前缀防覆盖
+                    globalShowConfigMap.put(sectionName + "-" + entry.getKey(), entry.getValue());
+                }
+            }
+
+            Set<String> secondSet = new LinkedHashSet<>();
+            boolean waterFlag = false;
+            for (String str : secForecastMap.keySet()) {
+                Map<String, Map<String, Object>> sMap = secForecastMap.get(str);
+                globalModelScheme.add(str);
+                for (String keyName : sMap.keySet()) {
+                    String t = EnumConstant.HFForeResType.getForeResTypeDescription(EnumConstant.HFForeResType.getForeResType(keyName));
+                    secondSet.add(t);
+                    //判断是否存在水位 type:water
+                    Map<String, Object> re = sMap.get(keyName);
+                    String allType = (String) re.get("type");
+                    if (StringUtils.equalsIgnoreCase(allType, "water")) {
+                        waterFlag = true;
+                    }
+                }
+            }
+
+            //如果waterFlag=false 删除实测中的水位数据
+            if (!waterFlag) {
+                Iterator<Map<String, Object>> iterator = hisList.iterator();
+                while (iterator.hasNext()) {
+                    Map<String, Object> m = iterator.next();
+                    String waterType = (String) m.get("type");
+                    if (StringUtils.equalsIgnoreCase(waterType, "water")) {
+                        iterator.remove();
+                    }
+                }
+            }
+
+            for (int i = 0; i < hisList.size(); i++) {
+                Map<String, Object> map = hisList.get(i);
+                //组装表头外层
+                JSONObject outSide = new JSONObject();
+                // 【修改】给表头label加上站点名便于在UI上区分，例如"瀑布沟-实测流量"
+                outSide.put("label", sectionName + "-" + map.get("name"));
+                // 【修改】极为关键：prop必须加上站点前缀，否则多站点的相同类型数据（如水位）在遍历时会互相覆盖！
+                String prop = sectionName + "-" + map.get("name");
+
+                //下一层
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("type", map.get("type"));
+                jsonObject.put("showName", map.get("showName"));
+                jsonObject.put("prop", prop);
+                jsonObject.put("label", map.get("unit"));
+                jsonObject.put("edit", map.get("editable"));
+                jsonObject.put("serieColor", map.get("serieColor"));
+                outSide.put("children", CollUtil.newArrayList(jsonObject));
+                secondHeader.add(outSide);
+
+                //将数据先放入o（Map）用于过滤相同时间的数据
+                Map<Calendar, String> dataMap = (Map) map.get("data");
+                for (Calendar calendar : dataMap.keySet()) {
+                    String time = DataTransferUtil.CalendarToString(calendar, rsTimeType, RSTime.RSTimeFormat.LINE);
+                    JSONObject jsonObject1 = new JSONObject();
+                    String v = dataMap.get(calendar);
+                    jsonObject1.put(prop, v);
+                    jsonObject1.put(TIME_STYLE, time);
+                    if (null != o.get(time)) {
+                        JSONObject jsonObject2 = o.get(time);
+                        jsonObject2.putAll(jsonObject1);
+                    } else {
+                        o.put(time, jsonObject1);
+                    }
+                }
+                // 【修改】特殊表头也增加站点前缀
+                tr1.add(sectionName + "-" + map.get("name"));
+                tr2.add(map.get("unit"));
+                tr3.add(map.get("unit"));
+            }
+
+            List<String> finalModelS = modelS;
+            List<JSONObject> tableHeaderSecond = secondSet.stream().map(x -> {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("label", x);
+                List<JSONObject> list = new LinkedList<>();
+                for (String str : secForecastMap.keySet()) {
+                    if (CollUtil.isNotEmpty(finalModelS) && !finalModelS.contains(str)) {
+                        continue;
+                    }
+                    Map<String, Map<String, Object>> seMap = secForecastMap.get(str);
+                    for (String keyName : seMap.keySet()) {
+                        String nameType = EnumConstant.HFForeResType.getForeResTypeDescription(EnumConstant.HFForeResType.getForeResType(keyName));
+                        if (StringUtils.equalsIgnoreCase(nameType, x)) {
+                            //外层表头
+                            JSONObject outside = new JSONObject();
+                            outside.put("label", str);
+                            JSONObject object = new JSONObject();
+                            // 预报数据的prop原版就已经加上了sectionName，这里无需修改，天然安全
+                            String prop = sectionName + "-" + nameType + "-" + str + "-" + keyName;
+                            object.put("prop", prop);
+                            object.put("label", seMap.get(keyName).get("unit"));
+                            object.put("type", seMap.get(keyName).get("type"));
+                            object.put("edit", seMap.get(keyName).get("editable"));
+                            object.put("confirmInfo", seMap.get(keyName).get("confirmInfo"));
+                            object.put("dispatch", seMap.get(keyName).get("dispatch"));
+                            object.put("showName", seMap.get(keyName).get("showName"));
+                            object.put("modelSchName", str);
+                            object.put("serieColor", seMap.get(keyName).get("serieColor"));
+                            outside.put("children", CollUtil.newArrayList(object));
+                            list.add(outside);
+
+                            //将表格数据存入o（Map）
+                            Map<String, Object> vMap = seMap.get(keyName);
+                            Map<Calendar, String> data = (Map) vMap.get("data");
+                            for (Calendar calendar : data.keySet()) {
+                                String v = data.get(calendar);
+                                String time = DataTransferUtil.CalendarToString(calendar, rsTimeType, RSTime.RSTimeFormat.LINE);
+                                JSONObject j = new JSONObject();
+                                j.put(TIME_STYLE, time);
+                                j.put(prop, v);
+                                if (null == o.get(time)) {
+                                    o.put(time, j);
+                                } else {
+                                    JSONObject js = o.get(time);
+                                    js.putAll(j);
+                                    o.put(time, js);
+                                }
+                            }
+                            tr3.add(seMap.get(keyName).get("unit"));
+                        }
+                    }
+                    tr2.add(str);
+                }
+                if (MapUtil.isNotEmpty(secForecastMap) && secForecastMap.size() == 1) {
+                    jsonObject.putAll(list.get(0));
+                    jsonObject.put("label", x);
+                } else {
+                    jsonObject.put("children", list);
+                }
+                tr1.add(JSONObject.parseObject("{\"label\": \"" + x + "\",\"colspan\": " + list.size() + "}"));
+                return jsonObject;
+            }).collect(Collectors.toList());
+            secondHeader.addAll(tableHeaderSecond);
+
+            //获取断面调度限制信息
+            List<Map<String, Object>> hfList = hfWebService.getSecDispatchLimitedInfo(userName, foreObjName, sectionName);
+            for (Map<String, Object> map : hfList) {
+                JSONObject tr = new JSONObject();
+                // 【修改】同样的，为防止多站点key冲突，限制信息也增加站点前缀
+                String name = sectionName + "-" + map.get("name").toString();
+                tr.put("label", map.get("showName"));
+                HashMap<Calendar, String> hashMap = (HashMap<Calendar, String>) map.get("data");
+                for (Calendar calendar : hashMap.keySet()) {
+                    String time = DataTransferUtil.CalendarToString(calendar, rsTimeType, RSTime.RSTimeFormat.LINE);
+                    String v = hashMap.get(calendar);
+                    JSONObject jsonObject = o.get(time);
+                    if (null == jsonObject) {
+                        JSONObject val = JSONObject.parseObject("{\"" + name + "\": \"" + v + "\"}");
+                        o.put(time, val);
+                    } else {
+                        jsonObject.put(name, v);
+                    }
+                }
+                map.remove("data");
+                JSONObject js = JSONObject.parseObject(JSONObject.toJSONString(map), JSONObject.class);
+                js.put("prop", name); // 【修改】这里也要用加了前缀的name
+                js.put("label", js.get("unit"));
+                js.put("type", js.get("type"));
+                js.put("edit", js.get("editable"));
+                js.put("showCol", false);
+                JSONArray array = new JSONArray();
+                array.add(js);
+                tr.put("children", array);
+                secondHeader.add(tr);
+            }
+        } // 【新增核心循环】结束
+
+        tableHeader.addAll(secondHeader);
+        List<JSONObject> tableData = new ArrayList<>();
+        tableData = o.values().stream()
+                .sorted(Comparator.comparing(x -> {
+                    try {
+                        return DataTransferUtil.stringToCalendar(x.getString(TIME_STYLE), rsTimeType, RSTime.RSTimeFormat.LINE);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    return null;
+                }))
+                .collect(Collectors.toList());
+
+        result.put("tableHeader", tableHeader);
+        List specialTableHeader = new ArrayList();
+        specialTableHeader.add(tr1);
+        specialTableHeader.add(tr2);
+        specialTableHeader.add(tr3);
+        result.put("specialTableHeader", specialTableHeader);
+        result.put("tableData", tableData);
+        JSONObject markArea = new JSONObject();
+        JSONArray markAreaList = new JSONArray();
+
+        if (ISMAJOR) {
+            // 【修改】重大天气标识也需要遍历各场站提取底色
+            for (String secName : sectionNames) {
+                String plantid = flowSenids.getString(secName).substring(0, 6);
+                Calendar startDate = DataTransferUtil.stringToCalendar(tableData.get(0).getString("Time"), rsTimeType, RSTime.RSTimeFormat.LINE);
+                Calendar endDate = DataTransferUtil.stringToCalendar(tableData.get(tableData.size() - 1).getString("Time"), rsTimeType, RSTime.RSTimeFormat.LINE);
+                if (rsTimeType == RSTime.RSTimeType.RSHour) {
+                    startDate = TimeFunc.getPeriodEnd(5, startDate);
+                    endDate = TimeFunc.getPeriodBeg(5, TimeFunc.add(endDate, 5, -1));
+                }
+
+                //预报重大天气
+                {
+                    ResultSetInterface rs = DBSplitUtil.exeTimeDBSelSql("daydb", startDate.getTimeInMillis(), endDate.getTimeInMillis(), plantid + "90", "time,v");
+                    if (rs.getRowNum() > 0) {
+                        String firstDeviationTime = null;
+                        String lastDeviationTime = null;
+                        for (int i = 0; i < rs.getRowNum(); i++) {
+                            if (rs.getDouble(i, 1) == -1) {
+                                if (firstDeviationTime == null) {
+                                    firstDeviationTime = DataTransferUtil.CalendarToString(rs.getDate(i, 0), rsTimeType, RSTime.RSTimeFormat.LINE);
+                                }
+                                lastDeviationTime = DataTransferUtil.CalendarToString(rs.getDate(i, 0), rsTimeType, RSTime.RSTimeFormat.LINE);
+                            } else {
+                                if (firstDeviationTime == null) continue;
+                                try {
+                                    if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 10) {
+                                        JSONArray markAreaData = new JSONArray();
+                                        markAreaList.add(markAreaData);
+                                        markAreaData.add(JSON.parseObject("{flag:-1,label:{position:\"insideBottom\",offset:[44,0]},name:\"低来水天气过程\",xAxis:'" + firstDeviationTime + "'}"));
+                                        markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
+                                    }
+                                    firstDeviationTime = null;
+                                    lastDeviationTime = null;
+                                } catch (Exception e) {
+                                }
+                            }
+                        }
+                        try {
+                            if (firstDeviationTime != null) {
+                                if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 9) {
+                                    JSONArray markAreaData = new JSONArray();
+                                    markAreaList.add(markAreaData);
+                                    markAreaData.add(JSON.parseObject("{flag:-1,label:{position:\"insideBottom\",offset:[44,0]},name:\"低来水天气过程\",xAxis:'" + firstDeviationTime + "'}"));
+                                    markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
+                                }
+                            }
+                        } catch (Exception e) {
+                        }
+                    }
+                }
+
+                //调度重大天气
+                {
+                    ResultSetInterface rs = DBSplitUtil.exeTimeDBSelSql("daydb", startDate.getTimeInMillis(), endDate.getTimeInMillis(), plantid + "91", "time,v");
+                    if (rs.getRowNum() > 0) {
+                        String firstDeviationTime = null;
+                        String lastDeviationTime = null;
+                        for (int i = 0; i < rs.getRowNum(); i++) {
+                            if (rs.getDouble(i, 1) == 1) {
+                                if (firstDeviationTime == null) {
+                                    firstDeviationTime = DataTransferUtil.CalendarToString(rs.getDate(i, 0), rsTimeType, RSTime.RSTimeFormat.LINE);
+                                }
+                                lastDeviationTime = DataTransferUtil.CalendarToString(rs.getDate(i, 0), rsTimeType, RSTime.RSTimeFormat.LINE);
+                            } else {
+                                if (firstDeviationTime == null) continue;
+                                try {
+                                    if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 0) {
+                                        JSONArray markAreaData = new JSONArray();
+                                        markAreaList.add(markAreaData);
+                                        markAreaData.add(JSON.parseObject("{flag:1,label:{position:\"insideTop\",offset:[-37,0]},hbpc:1,name:\"涨水天气过程\",xAxis:'" + firstDeviationTime + "'}"));
+                                        markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
+                                    }
+                                    firstDeviationTime = null;
+                                    lastDeviationTime = null;
+                                } catch (Exception e) {
+                                }
+                            }
+                        }
+                        try {
+                            if (firstDeviationTime != null) {
+                                if (TimeFunc.getInterval(TimeFunc.parseDateTime(firstDeviationTime), TimeFunc.parseDateTime(lastDeviationTime), 5) >= 1) {
+                                    JSONArray markAreaData = new JSONArray();
+                                    markAreaList.add(markAreaData);
+                                    markAreaData.add(JSON.parseObject("{flag:1,label:{position:\"insideTop\",offset:[-37,0]},hbpc:1,name:\"涨水天气过程\",xAxis:'" + firstDeviationTime + "'}"));
+                                    markAreaData.add(JSON.parseObject("{xAxis:'" + lastDeviationTime + "'}"));
+                                }
+                            }
+                        } catch (Exception e) {
+                        }
+                    }
+                }
+            } // 重大天气遍历结束
+
+            if (markAreaList.size() > 0) {
+                markArea.put("data", markAreaList);
+                markArea.put("silent", true);
+                result.put("markArea", markArea);
+            }
+        }
+
+        //所有置信区间
+        String[] strArr = hfWebService.getProbArray(userName);
+
+        return new Message().ok(666, "success")
+                .addData("data", result)
+                .addData("modelScheme", globalModelScheme)
+                .addData("confidenceInterval", strArr)
+                .addData("probForecast", globalProbMap) // 【修改】放入了包含站名前缀的集合
+                .addData("showConfigMap", globalShowConfigMap); // 【修改】放入了包含站名前缀的集合
+    }
+
     private static Double getAvgFlowByTime(String time, Map<String, Double> map, String timeType) {
         DateField dateField = DateField.HOUR_OF_DAY;
         String datePattern = "MM-DD HH";
@@ -1190,7 +1607,7 @@ public class FloodResults {
 
         String userName = params.getString("userName");
         String schemeName = params.getString("schemeName");
-        Map<Long, Map<String, String>> answer = new HashMap<>();
+        Map<String, Map<String, String>> answer = new HashMap<>();
         JSONObject dataObj = params.getJSONObject("data");
         for (String key : dataObj.keySet()) {
             JSONObject innerObj = dataObj.getJSONObject(key);
@@ -1198,7 +1615,7 @@ public class FloodResults {
             for (String innerKey : innerObj.keySet()) {
                 innerMap.put(innerKey, innerObj.getString(innerKey));
             }
-            answer.put(Long.valueOf(key), innerMap);
+            answer.put(key, innerMap);
         }
 
         boolean flag = hfWebService.modifyUnitParam(userName, schemeName, answer);
@@ -1348,7 +1765,7 @@ public class FloodResults {
         System.out.println("params" + params);
 
         String userName = params.getString("userName");
-       RSTime.RSTimeType rsTimeType = getTimeKey(userName);
+        RSTime.RSTimeType rsTimeType = getTimeKey(userName);
         //流域名basinName
         String basinName = params.getString("ly");
 
@@ -1562,7 +1979,7 @@ public class FloodResults {
 
     }
 
-    public static Map<String, Map<String, List<List<String>>>>  getAllResultByOne(JSONObject params) {
+    public static Map<String, Map<String, List<List<String>>>> getAllResultByOne(JSONObject params) {
 
         Map<String, Map<String, List<List<String>>>> result = new LinkedHashMap<>();
 
@@ -1570,7 +1987,7 @@ public class FloodResults {
 
         List<Map<String, String>> list = HFWebService.getSingleResultMapList(mapTypes, defaulttype);
 
-        for(Map<String, String> x:list){
+        for (Map<String, String> x : list) {
             String fldIdStr = null;
             //峡江专用
             if (defaulttype == 2) {
@@ -1602,7 +2019,7 @@ public class FloodResults {
                 String time = TimeUtil.CalendarToStringByFormat(calendar, "yyyy-MM-dd HH:mm:ss");
                 v.add(time);
 
-                for(int i=1;i<tableHeader.size();i++){
+                for (int i = 1; i < tableHeader.size(); i++) {
                     v.add(trMap.get(tableHeader.get(i).get(0)));
                 }
 
@@ -1610,15 +2027,13 @@ public class FloodResults {
             }
 
 
-            Map<String, List<List<String>>> value=new HashMap<>();
+            Map<String, List<List<String>>> value = new HashMap<>();
             value.put("tableHeader", tableHeader);
             value.put("tableData", tableData);
 
-            result.put(x.get("预报断面")+" - "+x.get("预报结果类型"), value);
+            result.put(x.get("预报断面") + " - " + x.get("预报结果类型"), value);
 
         }
-
-
 
 
         return result;
@@ -1898,7 +2313,7 @@ public class FloodResults {
         return new Message().ok(HttpStatus.HTTP_OK, "success")
                 .addData("rainSource", list)
                 .addData("rainSourceName", rainSourceName)
-                .addData("tree",tree);
+                .addData("tree", tree);
     }
 
     private static JSONArray getTree() throws Exception {
@@ -1910,10 +2325,10 @@ public class FloodResults {
             Document winDocument = XmlUtil.readXML(file);
             String winXmlStr = XmlUtil.toStr(winDocument);
             JSONObject js = JSONObject.parseObject(JSONUtil.parseFromXml(winXmlStr).toString());
-            JSONObject root= js.getJSONObject("root");
-            if(root!=null && root.get("basinTree") instanceof JSONArray){
+            JSONObject root = js.getJSONObject("root");
+            if (root != null && root.get("basinTree") instanceof JSONArray) {
                 array = js.getJSONObject("root").getJSONArray("basinTree");
-            }else {
+            } else {
                 array = new JSONArray();
                 array.add(root.getJSONObject("basinTree"));
             }
@@ -1955,11 +2370,20 @@ public class FloodResults {
         String userName = params.getString("userName");
 
         String ly = params.getString("ly");
+        String rainSourceName = params.getString("rainSourceName");
 
         //25.重新读取降雨预报数据
         //对应方法：boolean readRainDataBySource(String userName, String basinName, String rainSourceName)
         //传入参数：用户名，流域名，选中的降雨预报源名称
         //返回格式：如果读取成功则返回true
+
+
+        //czc修改
+        /*boolean isRead = hfWebService.readRainDataBySource(userName, ly, rainSourceName);
+
+        if (!isRead) {
+            return new Message().error(HttpStatus.HTTP_INTERNAL_ERROR, "切换降雨源失败");
+        }*/
 
         RSTime.RSTimeType rsTimeType = getTimeKey(userName);
 
@@ -2013,14 +2437,14 @@ public class FloodResults {
 
                 for (HFSchUnit hfSchUnit : v.keySet()) {
 
-                    if (null != unitId && hfSchUnit.getId() != unitId.longValue()) {
+                    if (null != unitId && !StrUtil.equalsAnyIgnoreCase(hfSchUnit.getId(), unitId.toString())) {
                         continue;
                     }
                     Map<String, Double> va = v.get(hfSchUnit);
 
-                    Long preStaForeID = hfSchUnit.getUnitPrepRegion().getPreStaForeID(); //倾向值
-                    Long preStaMaxForeID = hfSchUnit.getUnitPrepRegion().getPreStaMaxForeID();//上限值
-                    Long preStaMinForeID = hfSchUnit.getUnitPrepRegion().getPreStaMinForeID();//下限
+                    String preStaForeID = hfSchUnit.getUnitPrepRegion().getPreStaForeID(); //倾向值
+                    String preStaMaxForeID = hfSchUnit.getUnitPrepRegion().getPreStaMaxForeID();//上限值
+                    String preStaMinForeID = hfSchUnit.getUnitPrepRegion().getPreStaMinForeID();//下限
 
                     JSONObject p = new JSONObject();
                     p.put("label", hfSchUnit.getName());
@@ -2349,7 +2773,7 @@ public class FloodResults {
         String ybdx = params.getString("ybdx");
 
         //单元点号
-        Long unitId = params.getLong("unitId");
+        String unitId = params.getString("unitId");
 
         //步长
         int timeStep = params.getInteger("timeStep") == null ? 1 : params.getInteger("timeStep");
@@ -2381,7 +2805,7 @@ public class FloodResults {
 
                 String value = v.get(hfPreStation);
 
-                Long id = hfPreStation.getId();
+                String id = hfPreStation.getId();
 
                 header.put(id.toString(), name);
 
@@ -2432,7 +2856,7 @@ public class FloodResults {
 
         boolean hisOrForecast = params.getBoolean("hisOrForecast");
 
-        String userName=params.getString("userName");
+        String userName = params.getString("userName");
         RSTime.RSTimeType rsTimeType = getTimeKey(userName);
 
         //33.获取流域面雨量
@@ -2442,12 +2866,12 @@ public class FloodResults {
         List<Map<String, Object>> mapValue = hfWebService.getBasinRainDataList(userName, fanAn, timeStep, isMax, hisOrForecast);
 
         //获取所有流域
-        Map<Long, String> map = mapValue.stream().collect(Collectors.toMap(x -> (Long) x.get("id"), x -> (String) x.get("name"), (v1, v2) -> v2));
+        Map<String, String> map = mapValue.stream().collect(Collectors.toMap(x -> x.get("id").toString(), x -> (String) x.get("name"), (v1, v2) -> v2));
 
         //实测
         if (hisOrForecast) {
 
-            for (Long lo : map.keySet()) {
+            for (String lo : map.keySet()) {
 
                 tableHeader.add(JSONObject.parseObject("{\"prop\": \"" + lo + "\",\"label\": \"" + map.get(lo) + "\"}"));
 
@@ -2459,7 +2883,7 @@ public class FloodResults {
 
                 String time = DataTransferUtil.CalendarToString(calendar, rsTimeType, RSTime.RSTimeFormat.LINE);
 
-                Long id = (Long) ma.get("id");
+                String id = ma.get("id").toString();
 
                 JSONObject jsonObject = JSONObject.parseObject("{\"" + TIME_STYLE + "\":\"" + time + "\",\"" + id + "\":" + ma.get("v") + ",\"id\": \"" + id + "\"}");
 
@@ -2470,9 +2894,9 @@ public class FloodResults {
         } else {
 
             //按照流域分组
-            Map<Long, List<Map<String, Object>>> value = mapValue.stream().collect(Collectors.groupingBy(x -> (Long) x.get("id")));
+            Map<String, List<Map<String, Object>>> value = mapValue.stream().collect(Collectors.groupingBy(x -> x.get("id").toString()));
 
-            for (Long lo : value.keySet()) {
+            for (String lo : value.keySet()) {
 
                 //表头的tr
                 JSONObject tr = JSONObject.parseObject("{\"label\": \"" + map.get(lo) + "\"}");
@@ -2563,7 +2987,7 @@ public class FloodResults {
 
         boolean hisOrForecast = params.getBoolean("hisOrForecast");
 
-        Map<Long, List<Map<String, Object>>> dataList = new HashMap<>();
+        Map<String, List<Map<String, Object>>> dataList = new HashMap<>();
 
         //实测
         if (hisOrForecast) {
@@ -2582,13 +3006,13 @@ public class FloodResults {
 
                 return map;
 
-            }).collect(Collectors.groupingBy(x -> (Long.parseLong((String) x.get("id")))));
+            }).collect(Collectors.groupingBy(x -> x.get("id").toString()));
 
         } else {
 
             for (JSONObject js : list) {
 
-                Long id = js.getLong("id");
+                String id = js.getString("id");
 
                 Calendar calendar = TimeUtil.strToCalendarByFormat(js.getString(TIME_STYLE), 99);
 
@@ -2770,7 +3194,7 @@ public class FloodResults {
         String ybdx = params.getString("ybdx");
 
         //单元点号
-        Long unitId = params.getLong("unitId");
+        String unitId = params.getString("unitId");
 
         //是否展示上下线
         boolean isMax = null == params.getBoolean("isMax") ? false : params.getBoolean("isMax");
@@ -2828,7 +3252,7 @@ public class FloodResults {
         //用户名
         String userName = params.getString("userName");
 
-        RSTime.RSTimeType rsTimeType = FloodResults. getTimeKey(userName);
+        RSTime.RSTimeType rsTimeType = FloodResults.getTimeKey(userName);
 
         //预报对象名
         String ybdx = params.getString("ybdx");
@@ -2838,7 +3262,7 @@ public class FloodResults {
 
         List<JSONObject> data = JSONArray.parseArray(params.getJSONArray("data").toJSONString(), JSONObject.class);
 
-        Map<Long, List<Map<String, Object>>> dataList = new HashMap<>();
+        Map<String, List<Map<String, Object>>> dataList = new HashMap<>();
 
         int dataType = 1;
 
@@ -2846,11 +3270,11 @@ public class FloodResults {
 
             JSONObject js = data.get(i);
 
-            Calendar time = DataTransferUtil.stringToCalendar( js.getString(TIME_STYLE),rsTimeType, RSTime.RSTimeFormat.LINE);
+            Calendar time = DataTransferUtil.stringToCalendar(js.getString(TIME_STYLE), rsTimeType, RSTime.RSTimeFormat.LINE);
 
             Double v = js.getDouble("v");
 
-            long unitId = js.getLong("id");
+            String unitId = js.getString("id");
 
             dataType = null == js.getInteger("dataType") ? 1 : js.getInteger("dataType");
 
@@ -2909,21 +3333,21 @@ public class FloodResults {
 
         List<JSONObject> data = JSONArray.parseArray(params.getJSONArray("data").toJSONString(), JSONObject.class);
 
-        Map<Long, List<Map<String, Object>>> dataList = new HashMap<>();
+        Map<String, List<Map<String, Object>>> dataList = new HashMap<>();
 
         int dataType = 1;
 
-        RSTime.RSTimeType rsTimeType= getTimeKey(userName);
+        RSTime.RSTimeType rsTimeType = getTimeKey(userName);
 
         for (int i = 0; i < data.size(); i++) {
 
             JSONObject js = data.get(i);
 
-            Calendar time = DataTransferUtil.stringToCalendar( js.getString(TIME_STYLE),rsTimeType, RSTime.RSTimeFormat.LINE);
+            Calendar time = DataTransferUtil.stringToCalendar(js.getString(TIME_STYLE), rsTimeType, RSTime.RSTimeFormat.LINE);
 
             Double v = js.getDouble("v");
 
-            long unitId = js.getLong("id");
+            String unitId = js.getString("id");
 
             dataType = js.getInteger("dataType");
 
@@ -3086,35 +3510,38 @@ public class FloodResults {
 
             //第三行
             List<JSONObject> trThree = new ArrayList<>();
-            for (int j = 0; j < trArr.length; j++) {
-                JSONObject jsonObject = new JSONObject();
+            if (ArrayUtils.isNotEmpty(trArr)) {
+                for (int j = 0; j < trArr.length; j++) {
+                    JSONObject jsonObject = new JSONObject();
 
-                String label = trArr[j];
+                    String label = trArr[j];
 
-                jsonObject.put("label", label + "(" + map.get("单位") + ")");
-                jsonObject.put("showName", label);
-                jsonObject.put("prop", map.get("水库对象") + label);
-                jsonObject.put("type", map.get("type"));
-                jsonObject.put("attribute", shuxing[j]);
-                jsonObject.put("statisticType", map.get("统计类型"));
-                jsonObject.put("sericesType", map.get("图形类型"));
-                jsonObject.put("sdcsw", map.get("时段初水位"));
-                jsonObject.put("unit", map.get("单位"));
-                jsonObject.put("serieColor", map.get("系列颜色"));
+                    jsonObject.put("label", label + "(" + map.get("单位") + ")");
+                    jsonObject.put("showName", label);
+                    jsonObject.put("prop", map.get("水库对象") + label);
+                    jsonObject.put("type", map.get("type"));
+                    jsonObject.put("attribute", shuxing[j]);
+                    jsonObject.put("statisticType", map.get("统计类型"));
+                    jsonObject.put("sericesType", map.get("图形类型"));
+                    jsonObject.put("sdcsw", map.get("时段初水位"));
+                    jsonObject.put("unit", map.get("单位"));
+                    jsonObject.put("serieColor", map.get("系列颜色"));
 
-                //用于为数据赋值“v0”v1。。。。
-                trMap.put(trArr[j], map.get("水库对象") + label);
+                    //用于为数据赋值“v0”v1。。。。
+                    trMap.put(trArr[j], map.get("水库对象") + label);
 
-                //判断是否是可编辑列
-                if (ArrayUtil.isNotEmpty(editTr) && ArrayUtil.indexOf(editTr, label) != -1) {
-                    jsonObject.put("edit", true);
-                } else {
-                    jsonObject.put("edit", false);
+                    //判断是否是可编辑列
+                    if (ArrayUtil.isNotEmpty(editTr) && ArrayUtil.indexOf(editTr, label) != -1) {
+                        jsonObject.put("edit", true);
+                    } else {
+                        jsonObject.put("edit", false);
+                    }
+                    trThree.add(jsonObject);
+
+
                 }
-                trThree.add(jsonObject);
-
-
             }
+
 
             //第二行
 //            JSONObject trTwo = new JSONObject();
@@ -3442,11 +3869,11 @@ public class FloodResults {
         //[{"Time":"2023-08-28 12:00:00","unitId":"110302","v":"11"}]
         List<JSONObject> list = JSONArray.parseArray(params.getJSONArray("data").toJSONString(), JSONObject.class);
 
-        Map<Long, Map<Calendar, Double>> allDataMap = new HashMap<>();
+        Map<String, Map<Calendar, Double>> allDataMap = new HashMap<>();
 
         for (JSONObject js : list) {
 
-            Long id = js.getLong("id");
+            String id = js.getString("id");
 
             Double v = js.getDouble("v");
 
@@ -3512,7 +3939,7 @@ public class FloodResults {
 
         String ybdx = params.getString("ybdx");
 
-        Long unitId = params.getLong("unitId");
+        String unitId = params.getString("unitId");
 
         List<HFPreStation> list = hfWebService.getPreStationListByUnit(userName, ybdx, unitId);
 
@@ -3549,7 +3976,7 @@ public class FloodResults {
         boolean isMax = null == params.getBoolean("isMax") ? false : params.getBoolean("isMax");
 
         //单元id
-        Long unitId = params.getLong("unitId");
+        String unitId = params.getString("unitId");
         //32.获取某个流域下所有区间的面预报降雨序列
         //对应方法：Map<Calendar, Map<HFForeObj, Map<HFSchRegion, Map<String, Double>>>> getAllRegionForeRainMap(String userName,String basinName, int timeStep, boolean isMax)
         //传入参数：用户名，流域名，时间步长（若大于1则展示多个时段累计值），是否展示上下限
@@ -3595,7 +4022,7 @@ public class FloodResults {
 
                 for (HFSchRegion hfSchRegion : v.keySet()) {
 
-                    if (null != unitId && hfSchRegion.getId() != unitId.longValue()) {
+                    if (null != unitId && !StrUtil.equals(hfSchRegion.getId(), unitId)) {
 
                         continue;
                     }
@@ -4363,6 +4790,7 @@ public class FloodResults {
 
     public static void main(String[] args) {
 
+        SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd HH");
         String winFilePath = FilePathConstant.HFWINDOW_XML_FILEPATH;
         String schemeFilePath = FilePathConstant.HFSCHEME_XML_FILEPATH;
         File winFile = new File(winFilePath);
@@ -4376,93 +4804,76 @@ public class FloodResults {
         if (!file.exists()) {
             file = new File("HFSchemeConf.xml");
         }
-
+        String userName = "gyf";
         HFWebService service = new HFWebService("zh", winFile, file);
-        SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        service.initialize("高熠飞", winFile, file);
+        service.initialize(userName, winFile, file);
+
+        List<String> list = service.getAllFutureRainSource(userName);
+
 
         List<String> allSchemeNameList = service.getAllSchemeNameList();
         String schemeName = allSchemeNameList.get(0);
         List<String> allBasinNameList = service.getAllBasinNameList(schemeName);
         String basinName = allBasinNameList.get(0);
-        List<String> allForeObjNameList = service.getAllForeObjNameList(schemeName, basinName);
-        Calendar forecastBtime = Calendar.getInstance();
-        Calendar time = null;
+        List<String> foreObjNameList = service.getAllForeObjNameList(schemeName,
+                allBasinNameList.get(0));
+        List<String> allForeModelList = service.getAllForeModelList();
+        String foreMode = allForeModelList.get(0);
+
+        //24.获取选中的预报降雨源
+        //对应方法：String getSelectedRainSourceName(String userName)
+        //传入参数：用户名
+        //返回格式：选中的预报降雨源名称
+        String rainSourceName = service.getSelectedRainSourceName(userName);
+
+        Calendar foreBTime = Calendar.getInstance();
+        Date parse;
         try {
-            forecastBtime.setTime(sDateFormat.parse("2024-06-18 10:00:00"));
-
-            time = Calendar.getInstance();
-            time.setTime(sDateFormat.parse("2024-06-18 12:00:00"));
-            Calendar time1 = Calendar.getInstance();
-            time1.setTime(sDateFormat.parse("2024-05-12 18:00:00"));
-            Calendar time2 = Calendar.getInstance();
-            time2.setTime(sDateFormat.parse("2024-06-02 10:00:00"));
-        } catch (ParseException e) {
-            e.printStackTrace();
+            parse = sDateFormat.parse("2026-04-02 14");
+            foreBTime.setTime(parse);
+        } catch (ParseException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
         }
 
-        /* service.doDefaultForecast("高熠飞",forecastBtime); */
-        /*
-         * List<String> allBoundarySecList = service.getAllBoundarySecList("高熠飞",
-         * schemeName, basinName, allForeObjNameList); for(String
-         * sec:allBoundarySecList) { System.out.println(sec); }
-         */
+        service.initReadConditions(userName, schemeName, foreMode, foreBTime, basinName, foreObjNameList);
 
-        Map<String, Map<String, Boolean>> allModelSelMap = service.getAllModelSelMap("高熠飞", "小时");
-
-        long btime = Calendar.getInstance().getTimeInMillis();
-        Map<String, Object> readData = service.readData("高熠飞");
-
-	/*	List<Integer>typeList = new ArrayList<>();
-		typeList.add(1);
-		List<Map<String, String>> allSecForeStaticMap = service.getAllSecForeStaticMap("高熠飞", basinName, typeList, false);
-		for(Map<String, String>map:allSecForeStaticMap) {
-			for(Entry<String, String>entry:map.entrySet()) {
-				System.out.println(entry.getKey()+"   "+entry.getValue());
-			}
-		}
-	*/
-        boolean bo = service.readRainDataBySource("高熠飞", "新安江流域", "浙江气象局");
-//
-
-        //传入参数：用户名，流域名
-        Map<Calendar, Map<HFForeObj, Map<HFSchUnit, Map<String, Double>>>> map123 = service.getForeRainDataMap("高熠飞", "气象方案", 1, false);
-
-        Map<Long, List<Map<String, Object>>> dataList = new HashMap<>();
-
-        List<Map<String, Object>> list = new ArrayList<>();
-
-        Map<String, Object> map1 = new HashMap<>();
-        map1.put("time", time);
-        map1.put("v", 1000d);
-        map1.put("dataType", 1);
-        list.add(map1);
-
-        dataList.put(1L, list);
-        service.modifyBasinRainData("高熠飞", dataList, 1, false);
-
-
-        Map<Calendar, Map<HFForeObj, Map<HFSchUnit, Double>>> map456 = service.getHisRainDataMap("高熠飞", "气象方案", 1);
-
-        service.forecast("高熠飞", false);
-
-
-        List<Integer> typeList = new ArrayList<>();
-        typeList.add(1);
-        Map<String, Map<String, Map<String, Object>>> secForecastListMap = service.getSecForecastListMap("高熠飞",
-                basinName, allForeObjNameList.get(0), "新安江水库", false, typeList);
-
-
-        Map<String, Map<String, Object>> map = secForecastListMap.get("气象方案");
-
-        Map<String, Map<String, Object>> swmap = secForecastListMap.get("水文方案");
-
-        Map<String, Object> map2 = map.get("m_WholeRegFPAvg"); // m_FPAvgRCQCal Map<Calendar, String>
-        Map<Calendar, String> dataList2 = (Map<Calendar, String>) map2.get("data");
-        for (Map.Entry<Calendar, String> data : dataList2.entrySet()) {
-            System.out.println(sDateFormat.format(data.getKey().getTime()) + "   " + data.getValue() + "   " + ((Map<Calendar, String>) swmap.get("m_WholeRegFPAvg").get("data")).get(data.getKey()));
+        Map<String, Object> readData = new HashMap<>();
+        try {
+            readData = service.readData(userName);
+        } catch (Exception e2) {
+            // TODO: handle exception
         }
 
+        //页面功能：获取某个流域下所有断面历史流量的最大最小值
+        Map<String, Map<String, String>> map = service.getSecHisCharaMap(userName, basinName);
+
+        Map<String, Map<String, Object>> resultMap = new HashMap<>();
+
+        //24.获取指定预报对象集合下的所有水库断面集合
+        //对应方法：Map<HFSection, String> getAllReservoirSecMap(String userName, String schemeTypeStr, String basinName,List<String> foreObjNameList)
+        //传入参数：用户名，方案类型名，流域名，预报对象名称集合
+        //返回格式：主键是断面对象，值是对应的预报对象名
+
+        Map<HFSection, String> mapSk = service.getAllReservoirSecMap(userName, foreMode, basinName, foreObjNameList);
+        //获取所有方案
+        Map<String, String> fanMap = service.getAllModelNameList(userName);
+
+        List<Map<String, String>> sectionList = service.getAllSectionLatestInfo(userName);
+
+        List<Map<String, Object>> basinRainDataList = service.getBasinRainDataList(userName, "一般来水预报方案",
+                1, false, false);
+        StringBuffer stringBuffer = new StringBuffer();
+        for (Map<String, Object> map2 : basinRainDataList) {
+            Calendar time = (Calendar) map2.get("time");
+            String value = (String) map2.get("倾向值");
+            stringBuffer.append(sDateFormat.format(time.getTime()));
+            stringBuffer.append("   ");
+            stringBuffer.append(value);
+            stringBuffer.append("\n");
+
+        }
+        System.out.println(stringBuffer.toString());
     }
 
 
@@ -4739,7 +5150,7 @@ public class FloodResults {
 
 
         //获取所有方案
-        Map<String, Long> fanMap = hfWebService.getAllModelNameList(userName);
+        Map<String, String> fanMap = hfWebService.getAllModelNameList(userName);
         String fanAn = fanMap.keySet().stream().findFirst().get();
 
         Map<Calendar, Map<HFForeObj, Map<HFSchUnit, Map<String, Double>>>> map = hfWebService.getForeRainDataMap(userName, fanAn, 1, false);
@@ -4888,9 +5299,9 @@ public class FloodResults {
 
                     Map<String, Double> va = v.get(hfSchUnit);
 
-                    Long preStaForeID = hfSchUnit.getUnitPrepRegion().getPreStaForeID(); //倾向值
-                    Long preStaMaxForeID = hfSchUnit.getUnitPrepRegion().getPreStaMaxForeID();//上限值
-                    Long preStaMinForeID = hfSchUnit.getUnitPrepRegion().getPreStaMinForeID();//下限
+                    String preStaForeID = hfSchUnit.getUnitPrepRegion().getPreStaForeID(); //倾向值
+                    String preStaMaxForeID = hfSchUnit.getUnitPrepRegion().getPreStaMaxForeID();//上限值
+                    String preStaMinForeID = hfSchUnit.getUnitPrepRegion().getPreStaMinForeID();//下限
 
                     if (nodeArea.containsKey(preStaForeID + "")) {
                         Double value = va.get("倾向值");
@@ -4917,6 +5328,375 @@ public class FloodResults {
         return result;
     }
 
+
+    /************************** 智能体 Agent 专属接口 ************************************/
+    /**
+     * 1. 提取预报特征指标 (供智能体快速获取峰值、起涨时间等)
+     */
+    public static Message getStationForecastMetrics(JSONObject params) {
+        String userName = params.getString("userName");
+        String basinName = params.getString("ly");
+        String foreObjName = params.getString("dx");
+        String sectionName = params.getString("name");
+
+        JSONObject result = new JSONObject();
+        result.put("sectionName", sectionName);
+
+        // 默认获取倾向值 (type=1)
+        List<Integer> typeList = Collections.singletonList(1);
+        // 实际逻辑：获取全局的断面，判断当前断面是否为龙头断面
+        boolean isFirstSec = false;
+        for (int i = 0; i < hfSectionList.size(); i++) {
+            HFSection hfSection = hfSectionList.get(i);
+            if (hfSection.getName().equals(sectionName)) {
+                isFirstSec = hfSection.getSecClsType().equals(EnumConstant.HFSecClsType.firstSection);
+                break; // 匹配到目标断面后直接跳出循环，提升执行效率
+            }
+        }
+        // 获取预报序列
+        Map<String, Map<String, Map<String, Object>>> secForecastMap =
+                hfWebService.getSecForecastListMap(userName, basinName, foreObjName, sectionName, isFirstSec, typeList);
+
+        if (MapUtil.isEmpty(secForecastMap)) {
+            // 注意：根据规范，遥测设备故障或无数据时，统一标识为"缺数"
+            result.put("status", "缺数");
+            return new Message().ok(200, "success").addData("data", result);
+        }
+
+        double peakFlow = Double.MIN_VALUE;
+        String peakTime = "";
+        double startFlow = -1;
+        String startTime = "";
+        double totalVolume = 0d;
+
+        // 提取 m_FPAvgRCQCal (计算流量) 序列
+        for (Map<String, Map<String, Object>> schemeMap : secForecastMap.values()) {
+            if (schemeMap.containsKey("m_FPAvgRCQCal")) {
+                Map<Calendar, String> data = (Map<Calendar, String>) schemeMap.get("m_FPAvgRCQCal").get("data");
+                for (Map.Entry<Calendar, String> entry : data.entrySet()) {
+                    if (NumberUtil.isNumber(entry.getValue())) {
+                        double flow = Double.parseDouble(entry.getValue());
+                        String timeStr = DateUtil.formatDateTime(entry.getKey().getTime());
+
+                        if (startFlow == -1) {
+                            startFlow = flow;
+                            startTime = timeStr;
+                        }
+                        if (flow > peakFlow) {
+                            peakFlow = flow;
+                            peakTime = timeStr;
+                        }
+                        totalVolume += flow * 3600; // 粗略积分算总水量
+                    }
+                }
+                break;
+            }
+        }
+
+        result.put("status", "正常");
+        result.put("startTime", startTime);
+        result.put("startFlow", startFlow);
+        result.put("peakTime", peakTime);
+        result.put("peakFlow", Double.parseDouble(new DecimalFormat("#.0").format(peakFlow)));
+        result.put("maxIncrease", Double.parseDouble(new DecimalFormat("#.0").format(peakFlow - startFlow)));
+        result.put("totalVolume", totalVolume);
+
+        return new Message().ok(200, "success").addData("data", result);
+    }
+
+    /**
+     * 2. 阈值分析 (超警/超保研判)
+     */
+    public static Message getThresholdAnalysis(JSONObject params) {
+        String userName = params.getString("userName");
+        String foreObjName = params.getString("dx");
+        String sectionName = params.getString("name");
+
+        // 调用现有接口获取调度限制信息 (通常包含防洪限制水位、警戒流量等)
+        List<Map<String, Object>> limitList = hfWebService.getSecDispatchLimitedInfo(userName, foreObjName, sectionName);
+
+        // 配合当前实测值与预测峰值进行比对计算 (此处为逻辑骨架)
+        JSONObject result = new JSONObject();
+        result.put("sectionName", sectionName);
+        result.put("isExceed", false);
+        result.put("exceedType", "无");
+
+        if (CollUtil.isNotEmpty(limitList)) {
+            double warningLimit = -1.0; // 初始化为 -1 表示未找到有效阈值
+            String limitName = "";      // 记录匹配到的阈值中文名
+
+            // 1. 遍历调度限制信息列表，寻找真实的阈值
+            for (Map<String, Object> limitMap : limitList) {
+                // 获取限制线的中文显示名称
+                String showName = String.valueOf(limitMap.get("showName"));
+
+                // 根据业务实际情况匹配关键字。由于对比的是 peakFlow(流量)，优先拦截流量相关的警戒线
+                // 如果你们业务中叫法不同（比如叫 "防洪限制流量"），请在这里加上对应的关键字
+                if (showName.contains("警戒") || showName.contains("保证") || showName.contains("汛限")) {
+
+                    // 获取该限制线的时间序列数据
+                    Object dataObj = limitMap.get("data");
+                    if (dataObj instanceof Map) {
+                        Map<Calendar, String> dataMap = (Map<Calendar, String>) dataObj;
+
+                        // 阈值通常是一条水平的常量线，取第一个非空的有效数字即可
+                        for (String valStr : dataMap.values()) {
+                            if (cn.hutool.core.util.NumberUtil.isNumber(valStr)) {
+                                warningLimit = Double.parseDouble(valStr);
+                                limitName = showName;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // 如果已经成功解析到了阈值，直接跳出循环
+                if (warningLimit != -1.0) {
+                    break;
+                }
+            }
+
+            // 2. 获取大模型传来的当前预测峰值
+            double currentForecastPeak = params.getDouble("peakFlow");
+
+            // 3. 只有成功解析到真实阈值，才进行超阈判断
+            if (warningLimit != -1.0) {
+                // 将真实阈值和名称也扔给前端/智能体，方便大屏展示
+                result.put("warningLimit", warningLimit);
+                result.put("limitName", limitName);
+
+                if (currentForecastPeak > warningLimit) {
+                    result.put("isExceed", true);
+                    result.put("exceedType", "超" + limitName); // 动态拼装，如 "超警戒流量"
+                    // 保留一位小数，保持前端高精度显示的一致性
+                    result.put("exceedAmount", Double.parseDouble(new DecimalFormat("#.0").format(currentForecastPeak - warningLimit)));
+                }
+            } else {
+                result.put("status", "该断面未配置相关预警阈值参数");
+            }
+        }
+        return new Message().ok(200, "success").addData("data", result);
+    }
+
+    /**
+     * 3. 上下游拓扑关系查询 (供大模型解释"为什么风险高")
+     */
+    public static Message getBasinTopology(JSONObject params) {
+        String sectionName = params.getString("name");
+
+        // 此处应查询水文站网拓扑配置表
+        // 由于依赖具体业务库结构，使用 JDBC/MyBatis 查询。返回相邻节点
+        JSONObject topology = new JSONObject();
+        topology.put("current", sectionName);
+        topology.put("upstream", Arrays.asList("上游电站A", "上游控制断面B")); // 需替换为真实 DB 查询
+        topology.put("downstream", Arrays.asList("下游保护区C"));
+        topology.put("intervalBasin", "区间汇水单元X");
+
+        return new Message().ok(200, "success").addData("data", topology);
+    }
+
+    /**
+     * 4. 轮次对比服务 (通过 流域、对象、断面 自动寻址，对比上一版洪峰)
+     */
+    /**
+     * 4. 轮次对比服务 (自动解析 queryParams，对比上一版洪峰)
+     */
+    public static Message compareWithLastForecast(JSONObject params) {
+        // 🌟 修复 1：智能解包！完美适配您截图里嵌套在 queryParams 中的请求结构
+        JSONObject actualParams = params.containsKey("queryParams") ? params.getJSONObject("queryParams") : params;
+
+        String basinName = actualParams.getString("ly");
+        String foreObjName = actualParams.getString("dx");
+        String sectionName = actualParams.getString("name");
+        String ybdt = actualParams.getString("ybdt");
+
+        // 🌟 修复 2：使用 HashMap 代替 Fastjson 的 JSONObject！
+        // 彻底杜绝 Spring Boot (Jackson) 在返回数据时报 HttpMediaTypeNotAcceptableException 的 406 错误！
+        Map<String, Object> diffResult = new HashMap<>();
+
+        if (StringUtils.isBlank(foreObjName) || StringUtils.isBlank(sectionName) || StringUtils.isBlank(ybdt)) {
+            return new Message().error(500, "参数 dx(预报对象), name(断面名称) 或 ybdt(预报时间) 不能为空");
+        }
+
+        try {
+            Calendar currentYbdt = TimeUtil.strToCalendarByFormat(ybdt, 99);
+
+            // 🌟 修复 3：恢复使用原本代码风格的 ADXLD 和 HFIDX 表名，防止底层 DBManager 找不到表
+            // ================= 1. 查询当前轮次的预报序列 =================
+            String currentSql = "SELECT ADID, T, DT, D, YBDT FROM ADXLD " +
+                    "WHERE YBDT = ? " +
+                    "AND ADID IN (SELECT ADID FROM HFIDX WHERE FOREOBJNAME = ? AND SECNAME = ?) " +
+                    "ORDER BY DT ASC";
+
+            List<Object> currentParams = new ArrayList<>();
+            currentParams.add(currentYbdt);
+            currentParams.add(foreObjName);
+            currentParams.add(sectionName);
+            List<ADXLD> currentList = DBManager.executeSql(currentSql, ADXLD.class, currentParams.toArray(), "wds");
+
+            // ================= 2. 查询上一轮次的预报序列 =================
+            String lastSql = "SELECT ADID, T, DT, D, YBDT FROM ADXLD " +
+                    "WHERE ADID IN (SELECT ADID FROM HFIDX WHERE FOREOBJNAME = ? AND SECNAME = ?) " +
+                    "AND YBDT = (" +
+                    "    SELECT MAX(YBDT) FROM ADXLD " +
+                    "    WHERE YBDT < ? " +
+                    "    AND ADID IN (SELECT ADID FROM HFIDX WHERE FOREOBJNAME = ? AND SECNAME = ?)" +
+                    ") ORDER BY DT ASC";
+
+            List<Object> lastParams = new ArrayList<>();
+            lastParams.add(foreObjName);
+            lastParams.add(sectionName);
+            lastParams.add(currentYbdt);
+            lastParams.add(foreObjName);
+            lastParams.add(sectionName);
+            List<ADXLD> lastList = DBManager.executeSql(lastSql, ADXLD.class, lastParams.toArray(), "wds");
+
+            // ================= 3. 数据校验 =================
+            if (CollUtil.isEmpty(currentList)) {
+                diffResult.put("status", "当前轮次无预报数据");
+                // 🌟 修复 4：统一使用您代码里常用的 666 作为成功状态码
+                return new Message().ok(666, "success").addData("data", diffResult);
+            }
+            if (CollUtil.isEmpty(lastList)) {
+                diffResult.put("status", "无上一版预报数据");
+                return new Message().ok(666, "success").addData("data", diffResult);
+            }
+
+            // ================= 4. 提取两版的洪峰特征 =================
+            double currentPeakFlow = 0.0;
+            Calendar currentPeakTime = null;
+            for (ADXLD data : currentList) {
+                if (data.getD() != null && data.getD() > currentPeakFlow) {
+                    currentPeakFlow = data.getD();
+                    currentPeakTime = data.getDt();
+                }
+            }
+
+            double lastPeakFlow = 0.0;
+            Calendar lastPeakTime = null;
+            String lastYbdtStr = "";
+            for (ADXLD data : lastList) {
+                if (data.getD() != null && data.getD() > lastPeakFlow) {
+                    lastPeakFlow = data.getD();
+                    lastPeakTime = data.getDt();
+                    if (StringUtils.isBlank(lastYbdtStr) && data.getYbdt() != null) {
+                        lastYbdtStr = TimeUtil.CalendarToStringByFormat(data.getYbdt(), "yyyy-MM-dd HH:mm:ss");
+                    }
+                }
+            }
+
+            // ================= 5. 计算对比差值 =================
+            DecimalFormat df = new DecimalFormat("#.0");
+            diffResult.put("status", "正常");
+            diffResult.put("lastYbdt", lastYbdtStr);
+
+            // 5.1 峰值差计算
+            double flowDiff = currentPeakFlow - lastPeakFlow;
+            String flowDiffStr = (flowDiff > 0 ? "+" : "") + df.format(flowDiff);
+            diffResult.put("currentPeakFlow", Double.parseDouble(df.format(currentPeakFlow)));
+            diffResult.put("lastPeakFlow", Double.parseDouble(df.format(lastPeakFlow)));
+            diffResult.put("peakFlowDiff", flowDiffStr);
+            diffResult.put("peakFlowDiffValue", Double.parseDouble(df.format(flowDiff)));
+
+            // 5.2 峰现时间偏差计算
+            if (currentPeakTime != null && lastPeakTime != null) {
+                diffResult.put("currentPeakTime", TimeUtil.CalendarToStringByFormat(currentPeakTime, "yyyy-MM-dd HH:mm:ss"));
+                diffResult.put("lastPeakTime", TimeUtil.CalendarToStringByFormat(lastPeakTime, "yyyy-MM-dd HH:mm:ss"));
+
+                long timeDiffMs = currentPeakTime.getTimeInMillis() - lastPeakTime.getTimeInMillis();
+                long timeDiffHours = timeDiffMs / (1000 * 3600);
+
+                if (timeDiffHours > 0) {
+                    diffResult.put("peakTimeShift", "推迟 " + timeDiffHours + " 小时");
+                } else if (timeDiffHours < 0) {
+                    diffResult.put("peakTimeShift", "提前 " + Math.abs(timeDiffHours) + " 小时");
+                } else {
+                    diffResult.put("peakTimeShift", "时间无变化");
+                }
+            } else {
+                diffResult.put("peakTimeShift", "数据缺失");
+            }
+
+            // 5.3 风险趋势推断
+            double fluctuationRatio = 0.05;
+            if (flowDiff > lastPeakFlow * fluctuationRatio) {
+                diffResult.put("trendConclusion", "洪峰显著放大，风险升高");
+            } else if (flowDiff < -lastPeakFlow * fluctuationRatio) {
+                diffResult.put("trendConclusion", "洪峰明显减弱，风险降低");
+            } else {
+                diffResult.put("trendConclusion", "两次预报结果基本一致");
+            }
+
+            return new Message().ok(666, "success").addData("data", diffResult);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new Message().error(500, "轮次对比计算异常：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 智能体/单站专属接口：汇总单站的统计信息(top)与时间序列数据(bottom)
+     */
+    public static Message getSingleStationCombinedData(JSONObject params) {
+        Map<String, Object> result = new HashMap<>();
+
+        // 1. 获取前端传来的目标单站参数 dx
+        String targetDx = params.getString("dx");
+
+        if (StringUtils.isBlank(targetDx)) {
+            return new Message().error(500, "参数 dx(预报断面/预报对象) 不能为空");
+        }
+
+        // 2. 获取当前方案下所有的统计信息集合
+        Map mapTypes = JSON.parseObject(params.toJSONString());
+        List<Map<String, String>> allList = HFWebService.getSingleResultMapList(mapTypes, defaulttype);
+
+        // 3. 核心过滤：根据 dx 进行精准匹配，只保留该站的统计信息
+        List<Map<String, String>> filteredTopList = new ArrayList<>();
+        if (CollUtil.isNotEmpty(allList)) {
+            for (Map<String, String> m : allList) {
+                // 根据代码上下文推测，站名对应的 key 通常是 "预报断面" 或 "预报对象"
+                String secName = m.get("预报断面");
+                if (StringUtils.isBlank(secName)) {
+                    secName = m.get("预报对象");
+                }
+
+                // 只有站名匹配的才放进行李箱
+                if (StrUtil.equals(targetDx, secName)) {
+                    filteredTopList.add(m);
+                }
+            }
+        }
+
+        // 将过滤后的单站统计信息放入 top
+        result.put("top", filteredTopList);
+
+        // 4. 汇总该单站的时间序列数据 (bottom)
+        // 由于一个站点可能有多个预报序列(例如：流量、水位)，我们将它们按结果类型分类汇总
+        Map<String, Map<String, List<JSONObject>>> buttomData = new HashMap<>();
+
+        if (CollUtil.isNotEmpty(filteredTopList)) {
+            for (Map<String, String> m : filteredTopList) {
+                JSONObject json = (JSONObject) JSONObject.toJSON(m);
+
+                // 复用你原有的 getResultDataByTime 获取时间序列 (包含 tableHeader 和 tableData)
+                Map<String, List<JSONObject>> timeDataMap = getResultDataByTime(json);
+
+                // 使用 "预报结果类型" (如：流量、水位) 作为 key 进行嵌套存放
+                String resType = m.get("预报结果类型");
+                if (StringUtils.isBlank(resType)) {
+                    resType = "default_type";
+                }
+
+                buttomData.put(resType, timeDataMap);
+            }
+        }
+
+        result.put("buttom", buttomData);
+
+        return new Message().ok(666, "success").addData("data", result);
+    }
 
 
 

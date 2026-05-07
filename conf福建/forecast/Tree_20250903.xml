@@ -1,0 +1,694 @@
+<root>
+    <basinTree>
+        
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>旺坑</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133121</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>上培</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133122</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+           
+       
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>李大坪</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133128</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>园坪</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133129</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>后垄一</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133125</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>后垄二</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133126</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>金造桥</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133123</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>黛溪</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133124</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>洪口</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133127</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+
+        <level>1</level>
+        <name>霍童溪</name>
+        <pId>1</pId>
+        <id>290</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>双口渡</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133131</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+        <level>1</level>
+        <name>鳌江</name>
+        <pId>1</pId>
+        <id>280</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>万安</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133161</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>白沙</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133162</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>华安</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133163</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>华安二</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133164</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+
+        <level>1</level>
+        <name>九龙江</name>
+        <pId>1</pId>
+        <id>270</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>洋口</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133171</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>峡洋</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133172</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+  
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>照口</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133173</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>沙溪口</name>
+                <basinId>133020</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133020</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+        <level>1</level>
+        <name>富屯溪</name>
+        <pId>1</pId>
+        <id>260</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>贡川</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133042</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>竹洲</name>
+                <basinId>133043</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133043</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>台江</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133045</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+  
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>斑竹</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133044</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>沙县</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133046</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>高砂</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133047</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>安砂</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133041</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+        <level>1</level>
+        <name>沙溪</name>
+        <pId>1</pId>
+        <id>250</id>
+    </basinTree>
+    <basinTree>       
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>良浅</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133052</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+                 <children>
+                <latiTude>30.230200</latiTude>
+                <name>大言</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133053</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>         
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>黄潭</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133054</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>         
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>孔头</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133055</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>           
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>范厝</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133056</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>   
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>高唐</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133057</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+ 
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>池潭</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133051</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+ 
+        <level>1</level>
+        <name>金溪</name>
+        <pId>1</pId>
+        <id>240</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>霍口</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133132</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+     
+       
+        <level>1</level>
+        <name>敖江</name>
+        <pId>1</pId>
+        <id>230</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>汶潭</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133115</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+                 <children>
+                <latiTude>30.230200</latiTude>
+                <name>街面</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133111</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+     
+       
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>水东</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133112</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+     
+       
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>雍口</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133113</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+     
+       
+
+       
+        <level>1</level>
+        <name>尤溪</name>
+        <pId>1</pId>
+        <id>220</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>古一</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133061</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+                 <children>
+                <latiTude>30.230200</latiTude>
+                <name>古二</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133062</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+     
+       
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>古三</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133063</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+     
+       
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>古四</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133064</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+     
+       
+
+       
+        <level>1</level>
+        <name>古田溪</name>
+        <pId>1</pId>
+        <id>210</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>双口渡</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>100006</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+        <level>1</level>
+        <name>鳌江</name>
+        <pId>1</pId>
+        <id>200</id>
+    </basinTree>
+    <basinTree>
+        
+         <children>
+                <latiTude>28.118600</latiTude>
+                <name>牛头山</name>
+                <basinId>110300</basinId>
+                <company>四川凉山水洛河电力开发有限公司                                                                                                                                                                          </company>
+                <id>133151</id>
+                <sectionId>5500000020062,5500000020062,5500000020063                                                                                                                                                               </sectionId>
+                <longiTude>100.558600</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+        <level>1</level>
+        <name>赛江</name>
+        <pId>1</pId>
+        <id>190</id>
+    </basinTree>
+    <basinTree>
+        
+         <children>
+                <latiTude>28.118600</latiTude>
+                <name>棉花滩</name>
+                <basinId>110300</basinId>
+                <company>四川凉山水洛河电力开发有限公司                                                                                                                                                                          </company>
+                <id>133030</id>
+                <sectionId>5500000020062,5500000020062,5500000020063                                                                                                                                                               </sectionId>
+                <longiTude>100.558600</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+        <level>1</level>
+        <name>汀江</name>
+        <pId>1</pId>
+        <id>180</id>
+    </basinTree>
+    <basinTree>
+        
+         <children>
+                <latiTude>28.118600</latiTude>
+                <name>界竹口</name>
+                <basinId>110300</basinId>
+                <company>四川凉山水洛河电力开发有限公司                                                                                                                                                                          </company>
+                <id>133143</id>
+                <sectionId>5500000020062,5500000020062,5500000020063                                                                                                                                                               </sectionId>
+                <longiTude>100.558600</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+        <level>1</level>
+        <name>大樟溪</name>
+        <pId>1</pId>
+        <id>170</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>26.369500</latiTude>
+                <name>半岭</name>
+                <basinId>110600</basinId>
+                <company>会东县光源电力有限责任公司                                                                                                                                                                              </company>
+                <id>133301</id>
+                <sectionId>5500000020062                                                                                                                                                                                           </sectionId>
+                <longiTude>102.868800</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+        <level>1</level>
+        <name>木兰溪</name>
+        <pId>1</pId>
+        <id>160</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>27.822100</latiTude>
+                <name>龙湾</name>
+                <basinId>110800</basinId>
+                <company>四川华电西溪河水电开发有限公司                                                                                                                                                                          </company>
+                <id>134984</id>
+                <sectionId>null</sectionId>
+                <longiTude>102.997700</longiTude>
+                <regulateType>5</regulateType>
+            </children>
+       
+       
+        <level>1</level>
+        <name>七步溪</name>
+        <pId>1</pId>
+        <id>140</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>白云</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>134986</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+          
+            
+       
+        <level>1</level>
+        <name>白云溪</name>
+        <pId>1</pId>
+        <id>130</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>芹山</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133071</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+     
+       
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>周宁</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133072</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+     
+       
+            <children>
+                <latiTude>30.230200</latiTude>
+                <name>丰源</name>
+                <basinId>110100</basinId>
+                <company>四川华能巴塘水电有限公司                                                                                                                                                                                </company>
+                <id>133073</id>
+                <sectionId>5500000020062,5500000020062,5500000020063,5500000020020                                                                                                                                                 </sectionId>
+                <longiTude>99.219400</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+     
+       
+        <level>1</level>
+        <name>穆阳溪</name>
+        <pId>1</pId>
+        <id>120</id>
+    </basinTree>
+    <basinTree>
+            <children>
+                <latiTude>28.254500</latiTude>
+                <name>水口</name>
+                <basinId>111100</basinId>
+                <company>亚洲电力（雷波）水电有限公司                                                                                                                                                                            </company>
+                <id>133010</id>
+                <sectionId>5500000020062,5500000020065                                                                                                                                                                             </sectionId>
+                <longiTude>103.414800</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+            <children>
+                <latiTude>28.254500</latiTude>
+                <name>嵩滩埔</name>
+                <basinId>111100</basinId>
+                <company>亚洲电力（雷波）水电有限公司                                                                                                                                                                            </company>
+                <id>154057</id>
+                <sectionId>5500000020062,5500000020065                                                                                                                                                                             </sectionId>
+                <longiTude>103.414800</longiTude>
+                <regulateType>1</regulateType>
+            </children>
+        <level>1</level>
+        <name>闽江干流</name>
+        <pId>1</pId>
+        <id>110</id>
+    </basinTree>
+</root>

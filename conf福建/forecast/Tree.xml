@@ -1,0 +1,303 @@
+<root>
+    <basinTree>        
+            <children>        
+                <name>旺坑</name>                                                                                                                                                   
+                <id>133121</id>           
+            </children>
+            <children>
+                <name>上培</name>
+                <id>133122</id>
+            </children>               
+            <children>
+                <name>李大坪</name>
+                <id>133128</id>
+            </children>
+            <children>
+                <name>园坪</name>
+                <id>133129</id>
+            </children>
+            <children>
+                <name>后垄一</name>
+                <id>133125</id>
+            </children>
+            <children>
+                <name>后垄二</name>
+                <id>133126</id>
+            </children>
+            <children>
+                <name>金造桥</name>
+                <id>133123</id>
+            </children>
+            <children>
+                <name>黛溪</name>
+                <id>133124</id>
+            </children>
+            <children>
+                <name>洪口</name>
+                <id>133127</id>
+            </children>
+        <name>霍童溪</name>
+        <id>290</id>
+    </basinTree>
+    <basinTree>       
+            <children>
+                <name>双口渡</name>
+                <id>133131</id>
+            </children>
+        <name>鳌江</name>
+        <id>280</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <name>万安</name>
+                <id>133161</id>
+            </children>
+            <children>
+                <name>白沙</name>
+                <id>133162</id>
+            </children>
+            <children>
+                <name>华安</name>
+                <id>133163</id>
+            </children>
+
+            <children>
+                <name>华安二</name>
+                <id>133164</id>
+            </children>
+
+        <name>九龙江</name>
+        <id>270</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <name>洋口</name>
+                <id>133171</id>
+            </children>
+            <children>
+                <name>峡洋</name>
+                <id>133172</id>
+            </children>
+  
+            <children>
+                <name>照口</name>
+                <id>133173</id>
+            </children>
+            <children>
+                <name>沙溪口</name>
+                <id>133020</id>
+            </children>
+        <name>富屯溪</name>
+        <id>260</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <name>贡川</name>
+                <id>133042</id>
+            </children>
+            <children>
+                <name>竹洲</name>
+                <id>133043</id>
+            </children>
+            <children>
+                <name>台江</name>
+                <id>133045</id>
+            </children>
+  
+            <children>
+                <name>斑竹</name>
+                <id>133044</id>
+            </children>
+            <children>
+                <name>沙县</name>
+                <id>133046</id>
+            </children>
+            <children>
+                <name>高砂</name>
+                <id>133047</id>
+            </children>
+            <children>
+                <name>安砂</name>
+                <id>133041</id>
+            </children>
+        <name>沙溪</name>
+        <id>250</id>
+    </basinTree>
+    <basinTree>       
+            <children>
+                <name>良浅</name>
+                <id>133052</id>
+            </children>
+                 <children>
+                <name>大言</name>
+                <id>133053</id>
+            </children>         
+            <children>
+                <name>黄潭</name>
+                <id>133054</id>
+            </children>         
+            <children>
+                <name>孔头</name>
+                <id>133055</id>
+            </children>           
+            <children>
+                <name>范厝</name>
+                <id>133056</id>
+            </children>   
+            <children>
+                <name>高唐</name>
+                <id>133057</id>
+            </children>
+ 
+            <children>
+                <name>池潭</name>
+                <id>133051</id>
+            </children>
+ 
+        <name>金溪</name>
+        <id>240</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <name>霍口</name>
+                <id>133132</id>
+            </children>
+     
+       
+        <name>敖江</name>
+        <id>230</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <name>汶潭</name>
+                <id>133115</id>
+            </children>
+                 <children>
+                <name>街面</name>
+                <id>133111</id>
+            </children>
+     
+       
+            <children>
+                <name>水东</name>
+                <id>133112</id>
+            </children>
+     
+       
+            <children>
+                <name>雍口</name>
+                <id>133113</id>
+            </children>
+     
+       
+
+       
+        <name>尤溪</name>
+        <id>220</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <name>古一</name>
+                <id>133061</id>
+            </children>
+                 <children>
+                <name>古二</name>
+                <id>133062</id>
+            </children>
+     
+       
+            <children>
+                <name>古三</name>
+                <id>133063</id>
+            </children>
+     
+       
+            <children>
+                <name>古四</name>
+                <id>133064</id>
+            </children>
+     
+       
+
+       
+        <name>古田溪</name>
+        <id>210</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <name>双口渡</name>
+                <id>100006</id>
+            </children>
+        <name>鳌江</name>
+        <id>200</id>
+    </basinTree>
+    <basinTree>
+        
+         <children>
+                <name>牛头山</name>
+                <id>133151</id>
+            </children>
+        <name>赛江</name>
+        <id>190</id>
+    </basinTree>
+    <basinTree>
+        
+         <children>
+                <name>棉花滩</name>
+                <id>133030</id>
+            </children>
+        <name>汀江</name>
+        <id>180</id>
+    </basinTree>
+    <basinTree>
+        
+         <children>
+                <name>界竹口</name>
+                <id>133143</id>
+            </children>
+        <name>大樟溪</name>
+        <id>170</id>
+    </basinTree>
+    <basinTree>
+        
+            <children>
+                <name>芹山</name>
+                <id>133071</id>
+            </children>
+     
+       
+            <children>
+                <name>周宁</name>
+                <id>133072</id>
+            </children>
+     
+       
+            <children>
+                <name>丰源</name>
+                <id>133073</id>
+            </children>
+     
+       
+        <name>穆阳溪</name>
+        <id>120</id>
+    </basinTree>
+    <basinTree>
+            <children>
+                <name>水口</name>
+                <id>133010</id>
+            </children>
+            <children>
+                <name>嵩滩埔</name>
+                <id>154057</id>
+            </children>
+        <name>闽江干流</name>
+        <id>110</id>
+    </basinTree>
+</root>

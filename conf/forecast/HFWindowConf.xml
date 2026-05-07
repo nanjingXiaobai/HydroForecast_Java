@@ -9,9 +9,10 @@
   <isBaseQProcessed>false</isBaseQProcessed>
   <isAdjustTranslate>false</isAdjustTranslate>
   <isStartFromRealQ>true</isStartFromRealQ>
-  <isProbForecast>true</isProbForecast>
-  <probForecastArr>0.95,0.90,0.85</probForecastArr>
+  <isProbForecast>false</isProbForecast>
+  <probForecastArr></probForecastArr>
   <isFutureDottedLine>true</isFutureDottedLine>
+  <isDM6Special>true</isDM6Special>
   <saveConfig>
     <isHF_SECFORERESSave>false</isHF_SECFORERESSave>
     <isHF_INDEX_PRO_DATASave>false</isHF_INDEX_PRO_DATASave>
@@ -21,8 +22,8 @@
     <isAdybmSave>false</isAdybmSave>
     <isAddbSave>false</isAddbSave>
     <isSOILWATERSave>false</isSOILWATERSave>
-    <isSpanDataSave>true</isSpanDataSave>
-    <isWouSave>false</isWouSave>
+    <isSpanDataSave>false</isSpanDataSave>
+    <isWouSave>true</isWouSave>
   </saveConfig>
   <HFWinDataLevel>
     <runoff>
@@ -121,7 +122,7 @@
           <timeType>RSXun</timeType>
         </forecastPeriod>
         <forecastPeriod>
-          <value>30</value>
+          <value>10</value>
           <minvalue>1</minvalue>
           <maxvalue>120</maxvalue>
           <step>1</step>
@@ -255,7 +256,7 @@
       <HFWinFutureRainSource>
         <name>南瑞预报</name>
         <unitType>10054</unitType>
-        <timeSpan>3,6</timeSpan>
+        <timeSpan>3,6,12,24</timeSpan>
         <isSelect>true</isSelect>
       </HFWinFutureRainSource>
     </HFWinFutureRainConfig>
@@ -752,7 +753,7 @@
             <calcOutRCQName>m_FPAvgOutRCQCal</calcOutRCQName>
             <calcOutRCQDesp>校正调节出库</calcOutRCQDesp>
             <calcOutRCQColor>106,90,105</calcOutRCQColor>
-            <isCalcOutRCQShow>true</isCalcOutRCQShow>
+            <isCalcOutRCQShow>false</isCalcOutRCQShow>
             <isCalcOutRCQAbleSet>false</isCalcOutRCQAbleSet>
             <calcOutRCQEditState>0</calcOutRCQEditState>
             <isCalcOutRCQSave>false</isCalcOutRCQSave>
@@ -987,7 +988,7 @@
           <isQCal>false</isQCal>
           <isRCQCal>true</isRCQCal>
           <isOutQCal>false</isOutQCal>
-          <isOutRCQCal>true</isOutRCQCal>
+          <isOutRCQCal>false</isOutRCQCal>
           <isWholeRegQ>false</isWholeRegQ>
           <isCalcOutRCZ>false</isCalcOutRCZ>
           <isCalcOutZ>false</isCalcOutZ>
@@ -1132,10 +1133,10 @@
             <calcOutRCQName>m_FPAvgOutRCQCal</calcOutRCQName>
             <calcOutRCQDesp>校正调节出库</calcOutRCQDesp>
             <calcOutRCQColor>106,90,105</calcOutRCQColor>
-            <isCalcOutRCQShow>true</isCalcOutRCQShow>
+            <isCalcOutRCQShow>false</isCalcOutRCQShow>
             <isCalcOutRCQAbleSet>false</isCalcOutRCQAbleSet>
             <calcOutRCQEditState>0</calcOutRCQEditState>
-            <isCalcOutRCQSave>true</isCalcOutRCQSave>
+            <isCalcOutRCQSave>false</isCalcOutRCQSave>
             <calcOutRCZName>m_FPAvgOutRCZCal</calcOutRCZName>
             <calcOutRCZDesp>校正调节水位</calcOutRCZDesp>
             <calcOutRCZColor>106,90,205</calcOutRCZColor>

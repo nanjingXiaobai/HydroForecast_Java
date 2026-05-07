@@ -1,26 +1,83 @@
 <list>
     <com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>
-        <service>WDS</service>
+
         <!--四川-->
-        <url>jdbc:dm://196.167.30.69:5236/MWDS</url>
-        <user>MWDS</user>
-        <password>Comnari@2025</password>
+        <!--        <service>WDS</service>-->
+        <!--        <url>jdbc:dm://10.144.60.114:5236/WDS</url>-->
+        <!--        <user>WDS</user>-->
+        <!--        <password>Comnari@2025</password>-->
+        <!--        <driver>dm.jdbc.driver.DmDriver</driver>&ndash;&gt;-->
+        <!--        <maxCon>7</maxCon>-->
+        <!--        <minCon>3</minCon>-->
         <!--福建-->
-<!--        <url>jdbc:dm://10.18.61.51:5236/wds</url>-->
-<!--        <user>WDS</user>-->
-<!--        <password>narisqslsd</password>-->
-        <driver>dm.jdbc.driver.DmDriver</driver>
-        <maxCon>7</maxCon>
-        <minCon>3</minCon>
-    </com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>
-<!--    <com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>-->
-<!--        <service>PUB</service>-->
-<!--        <url>jdbc:dm://196.167.30.69:5236/pubuser</url>-->
-<!--        <user>PUBUSER</user>-->
+        <!--        <service>WDS</service>-->
+        <!--        <url>jdbc:dm://localhost:5236/WDS</url>-->
+        <!--        <user>WDS</user>-->
+        <!--        <password>Root123456</password>-->
+        <!--        新疆-->
+<!--        <service>WOU</service>-->
+<!--        <url>jdbc:dm://10.18.61.83:5236/wou</url>-->
+<!--        <user>WOU</user>-->
 <!--        <password>Comnari@2025</password>-->
 <!--        <driver>dm.jdbc.driver.DmDriver</driver>-->
 <!--        <maxCon>7</maxCon>-->
 <!--        <minCon>3</minCon>-->
-<!--    </com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>-->
+
+        <!--西北-->
+<!--                <service>WOU</service>-->
+<!--                <url>jdbc:dm://196.167.30.64:5236/wou</url>-->
+<!--                <user>WOU</user>-->
+<!--                <password>narisqslsd</password>-->
+<!--                <driver>dm.jdbc.driver.DmDriver</driver>-->
+<!--                <maxCon>7</maxCon>-->
+<!--                <minCon>3</minCon>-->
+
+
+        <!--        <service>USER_WOU</service>-->
+        <!--        <url>jdbc:dm://10.18.61.73:5236/USER_WOU</url>-->
+        <!--        <user>USER_WOU</user>-->
+        <!--        <password>Dky_2022@hbdl</password>-->
+        <!--        <driver>dm.jdbc.driver.DmDriver</driver>-->
+        <!--        <maxCon>7</maxCon>-->
+        <!--        <minCon>3</minCon>-->
+
+
+        <!--        <service>WDS</service>-->
+        <!--        <url>jdbc:dm://127.0.0.1:5236/WDS</url>-->
+        <!--        <user>WDS</user>-->
+        <!--        <password>Root123456</password>-->
+        <!--        <driver>dm.jdbc.driver.DmDriver</driver>-->
+        <!--        <maxCon>7</maxCon>-->
+        <!--        <minCon>3</minCon>-->
+
+        <service>WOU</service>
+        <url>jdbc:dm://192.168.2.202:12345/WOU</url>
+        <user>WOU</user>
+        <password>Comnari2026</password>
+        <driver>dm.jdbc.driver.DmDriver</driver>
+        <maxCon>7</maxCon>
+        <minCon>3</minCon>
+    </com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>
+    <!--<com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>
+        <service>PUB</service>
+        <url>jdbc:dm://10.144.60.114:5236/pubuser</url>
+        <user>PUBUSER</user>
+        <password>pubuser#WDS9200</password>
+        <driver>dm.jdbc.driver.DmDriver</driver>
+        <maxCon>7</maxCon>
+        <minCon>3</minCon>
+
+    </com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>-->
+
+    <!--        <com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>-->
+    <!--            <service>PUB</service>-->
+    <!--            <url>jdbc:dm://10.144.60.114:5236/pubuser</url>-->
+    <!--            <user>PUBUSER</user>-->
+    <!--            <password>pubuser#WDS9200</password>-->
+    <!--            <driver>dm.jdbc.driver.DmDriver</driver>-->
+    <!--            <maxCon>7</maxCon>-->
+    <!--            <minCon>3</minCon>-->
+    <!--        </com.nari.slsd.hps.dbmgr.conf.ServiceJDBC>-->
 </list>
+
 

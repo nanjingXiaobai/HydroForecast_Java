@@ -8,9 +8,9 @@
     <vectJdbc>
         <com.sgepri.ce.db.DBDefineGlobal_-JDBC>
             <name>WDS</name>
-            <jdbcUrl>jdbc:dm://196.167.30.69:5236/MWDS</jdbcUrl>
-            <user>MWDS</user>
-            <passwd>Comnari@2025</passwd>
+            <jdbcUrl>jdbc:dm://localhost:5236/WDS</jdbcUrl>
+            <user>WDS</user>
+            <passwd>Root123456</passwd>
 <!--            <jdbcUrl>jdbc:dm://10.18.61.73:5236/USER_WOU</jdbcUrl>-->
 <!--            <user>USER_WOU</user>-->
 <!--            <passwd>Comnari@2025</passwd>-->
