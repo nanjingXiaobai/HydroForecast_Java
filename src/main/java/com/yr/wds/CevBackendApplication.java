@@ -42,7 +42,7 @@ public class CevBackendApplication {
 //            TestMainPanel.main(args);
 //        });
         //开始自动预报
-//        HFAutoForeService.main(args);
+        HFAutoForeService.main(args);
 
 
         System.out.println(" ......................阿弥陀佛......................\n"+

@@ -72,8 +72,11 @@ public class FloodForecast {
             case "flood_rainfall_RainData":                 //获取某一个流域指定预报方案的雨量站实测数据
                 return_data = FloodResults.getHisPreRainDataMap(query_params);
                 break;
-            case "flood_rainfall_source":                   //获取某个流域下所有单元的面雨量预报降雨数据
+            case "flood_rainfall_source":                   //获取某个流域下所有单元的面雨量预报降雨数据 //czc修改 该接口现在作用只是用来切换降雨预报源
                 return_data = FloodResults.getRainfallBySource(query_params);
+                break;
+            case "flood_getRainfall_bySource":                   //获取某个流域下所有单元的面雨量预报降雨数据  //czc修改 新增接口现在作用才是获取某个流域下所有单元的面雨量预报降雨数据
+                return_data = FloodResults.getRainfallDataBySource(query_params);
                 break;
             case "flood_getUnitData":                        //获取某个单元下的所有雨量站信息(实测或预报)
                 return_data = FloodResults.getHistoryForecast(query_params);

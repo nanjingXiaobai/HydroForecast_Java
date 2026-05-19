@@ -2378,7 +2378,159 @@ public class FloodResults {
         //返回格式：如果读取成功则返回true
 
 
-        //czc修改
+
+        boolean isRead = hfWebService.readRainDataBySource(userName, ly, rainSourceName);
+
+        if (!isRead) {
+            return new Message().error(HttpStatus.HTTP_INTERNAL_ERROR, "切换降雨源失败");
+        }
+
+        RSTime.RSTimeType rsTimeType = getTimeKey(userName);
+
+        Integer timeStep = params.getInteger("timeStep");
+
+
+        //是否展示上下线
+        boolean isMax = null == params.getBoolean("isMax") ? false : params.getBoolean("isMax");
+
+        //单元id
+        Long unitId = params.getLong("unitId");
+
+        timeStep = null == timeStep ? 1 : timeStep;
+
+        //Map<Calendar, Map<HFForeObj, Map<HFSchUnit, Map<String, Double>>>> getForeRainDataMap(String userName, String basinName)
+        //传入参数：用户名，流域名
+        Map<Calendar, Map<HFForeObj, Map<HFSchUnit, Map<String, Double>>>> map = hfWebService.getForeRainDataMap(userName, fanAn, timeStep, isMax);
+
+        List<JSONObject> tableData = new LinkedList<>();
+
+        Set<JSONObject> tableHeader = new LinkedHashSet<>();
+
+        JSONObject object = new JSONObject();
+
+        object.put("prop", TIME_STYLE);
+
+        object.put("label", "时间");
+
+        tableHeader.add(object);
+
+        for (Calendar calendar : map.keySet()) {
+            //将Calendar转string
+            String time = DataTransferUtil.CalendarToString(calendar, rsTimeType, RSTime.RSTimeFormat.LINE);
+
+            JSONObject js = new JSONObject();
+
+            js.put(TIME_STYLE, time);
+
+            Map<HFForeObj, Map<HFSchUnit, Map<String, Double>>> mapOne = map.get(calendar);
+
+            for (HFForeObj hFForeObj : mapOne.keySet()) {
+
+                //添加表头数据
+                JSONObject tr = new JSONObject();
+
+                tr.put("label", hFForeObj.getName());
+
+                Map<HFSchUnit, Map<String, Double>> v = mapOne.get(hFForeObj);
+
+                Set<JSONObject> set = new LinkedHashSet<>();
+
+                for (HFSchUnit hfSchUnit : v.keySet()) {
+
+                    if (null != unitId && !StrUtil.equalsAnyIgnoreCase(hfSchUnit.getId(), unitId.toString())) {
+                        continue;
+                    }
+                    Map<String, Double> va = v.get(hfSchUnit);
+
+                    String preStaForeID = hfSchUnit.getUnitPrepRegion().getPreStaForeID(); //倾向值
+                    String preStaMaxForeID = hfSchUnit.getUnitPrepRegion().getPreStaMaxForeID();//上限值
+                    String preStaMinForeID = hfSchUnit.getUnitPrepRegion().getPreStaMinForeID();//下限
+
+                    JSONObject p = new JSONObject();
+                    p.put("label", hfSchUnit.getName());
+
+                    p.put("topLabel", hFForeObj.getName());
+                    JSONArray array = new JSONArray();
+
+
+                    //1:倾向值,2:上限值,3:下限值
+                    if (null != va.get("下限值")) {
+                        JSONObject td3 = new JSONObject();
+                        td3.put("label", "下限值");
+                        td3.put("showName", hfSchUnit.getName());
+                        td3.put("prop", preStaMinForeID + "");
+                        td3.put("dataType", 3);
+                        td3.put("ybdx", hFForeObj.getName());
+                        td3.put("unitId", hfSchUnit.getId());
+                        array.add(td3);
+
+                        js.put(preStaMinForeID + "", va.get("下限值"));
+                    }
+
+
+                    if (null != va.get("倾向值")) {
+                        JSONObject td1 = new JSONObject();
+                        td1.put("showName", hfSchUnit.getName());
+                        td1.put("label", "倾向值");
+                        td1.put("prop", preStaForeID + "");
+                        td1.put("dataType", 1);
+                        td1.put("ybdx", hFForeObj.getName());
+                        td1.put("unitId", hfSchUnit.getId());
+                        array.add(td1);
+                        js.put(preStaForeID + "", va.get("倾向值"));
+
+                    }
+
+                    if (null != va.get("上限值")) {
+                        JSONObject td2 = new JSONObject();
+                        td2.put("showName", hfSchUnit.getName());
+                        td2.put("label", "上限值");
+                        td2.put("dataType", 2);
+                        td2.put("prop", preStaMaxForeID + "");
+                        td2.put("ybdx", hFForeObj.getName());
+                        td2.put("unitId", hfSchUnit.getId());
+                        array.add(td2);
+
+                        js.put(preStaMaxForeID + "", va.get("上限值"));
+
+                    }
+
+                    p.put("children", array);
+                    set.add(p);
+
+
+                }
+
+                tr.put("children", set);
+
+                tableHeader.add(tr);
+            }
+            tableData.add(js);
+
+
+        }
+
+
+        return new Message().ok(666, "success").addData("tableHeader", tableHeader).addData("tableData", tableData);
+    }
+
+    public static Message getRainfallDataBySource(JSONObject params) {
+
+
+        String fanAn = params.getString("fanAn");
+
+        String userName = params.getString("userName");
+
+        String ly = params.getString("ly");
+        String rainSourceName = params.getString("rainSourceName");
+
+        //25.重新读取降雨预报数据
+        //对应方法：boolean readRainDataBySource(String userName, String basinName, String rainSourceName)
+        //传入参数：用户名，流域名，选中的降雨预报源名称
+        //返回格式：如果读取成功则返回true
+
+
+
         /*boolean isRead = hfWebService.readRainDataBySource(userName, ly, rainSourceName);
 
         if (!isRead) {
