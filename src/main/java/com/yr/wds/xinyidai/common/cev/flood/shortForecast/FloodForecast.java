@@ -163,6 +163,20 @@ public class FloodForecast {
             case "flood_resultData_byTime":                 //根据选中方案的某一个预报序列返回时间序列值
                 return_data = new Message().ok(666, "success").addData("data", FloodResults.getResultDataByTime(query_params));
                 break;
+
+            /****************************乌江结果管理-站点预报过程查看***************************/
+            case "flood_stationProcess_config":              //乌江结果管理-站点预报过程页面配置
+                return_data = WujiangStationProcessResult.config(query_params);
+                break;
+            case "flood_stationProcess_tree":                //乌江结果管理-站点预报过程序列树
+                return_data = WujiangStationProcessResult.tree(query_params);
+                break;
+            case "flood_stationProcess_options":             //乌江结果管理-站点预报过程筛选项
+                return_data = WujiangStationProcessResult.options(query_params);
+                break;
+            case "flood_stationProcess_query":               //乌江结果管理-站点预报过程查询
+                return_data = WujiangStationProcessResult.query(query_params);
+                break;
             case "flood_doDeleteResult":                    //39.结果管理-删除某一个预报制作时间下的预报方案及数据
                 return_data = FloodResults.doDeleteResultList(query_params);
                 break;
@@ -185,6 +199,22 @@ public class FloodForecast {
                 break;
             case "flood_getFloodAnalysisDefaultLevel":      //51.获取承洪能力分析的默认水位
                 return_data = FloodResults.getFloodAnalysisDefaultLevel(query_params);
+                break;
+
+            /**************************自动设置************************************/
+            case "flood_readAutomatic":
+                return_data = FloodResults.readAutomatic(query_params);
+                break;
+            case "flood_automaticSetting":
+                return_data = FloodResults.automaticSetting(query_params);
+                break;
+
+            /**************************长沙定制************************************/
+            case "flood_getTree":
+                return_data = FloodResults.getTreeByChanSha(query_params);
+                break;
+            case "flood_getFlowLevelRainfallByCS":
+                return_data = FloodResults.getFlowLevelRainfallByCS(query_params);
                 break;
 
             /*****************************昌吉结果管理***************************/

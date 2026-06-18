@@ -29,6 +29,7 @@ import com.nari.slsd.hydro.backend.unified.base.util.DataTransferUtil;
 import com.nari.slsd.hydro.backend.unified.base.util.RSTime;
 import com.nari.slsd.hydro.backend.unified.constant.EnumConstant;
 import com.nari.slsd.hydro.backend.unified.constant.FilePathConstant;
+import com.nari.slsd.hydro.backend.unified.dbi.HFDatabaseDoc;
 import com.nari.slsd.hydro.backend.unified.dobj.ADXLD;
 import com.nari.slsd.hydro.backend.unified.dobj.HFIdx;
 import com.nari.slsd.hydro.backend.unified.dobj.HFRunConSet;
@@ -37,10 +38,12 @@ import com.sgepri.ce.db.ResultSetInterface;
 import com.sgepri.ce.db.util.DBOpUtil;
 import com.sgepri.ce.db.util.DBSplitUtil;
 import com.sgepri.ce.util.TimeFunc;
+import com.yr.wds.xinyidai.common.cev.flood.config.HFAutoForeFloodService;
 import com.yr.wds.xinyidai.common.cev.flood.enums.SequenceType;
 import com.yr.wds.xinyidai.common.cev.flood.util.*;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
+import org.dom4j.DocumentException;
 import org.dom4j.io.SAXReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
@@ -5851,6 +5854,265 @@ public class FloodResults {
     }
 
 
+    public static Message readAutomatic(JSONObject params) {
+
+        Map<String, Object> map = new HashMap<>();
+        //读取HFSchemeConf.xml
+        Document document = XmlUtil.readXML(System.getProperty("user.dir") + "/conf/forecast/HFSchemeConf.xml");
+        String xmlStr = XmlUtil.toStr(document);
+        JSONObject json = JSONObject.parseObject(JSONUtil.parseFromXml(xmlStr).toString());
+        //获取断面列表
+        JSONObject scheme = json.getJSONObject("foreSchemeSet").getJSONObject("scheme");
+        JSONArray arr = scheme.getJSONObject("basin").getJSONObject("watershed").getJSONObject("course").getJSONArray("foreObj");
+
+        List<JSONObject> crossSection = new ArrayList<>();
+
+        for (int i = 0; i < arr.size(); i++) {
+            JSONObject jsonObject = arr.getJSONObject(i);
+            JSONObject js = new JSONObject();
+            js.put("name", jsonObject.getString("name"));
+
+            Object obj = jsonObject.get("modelScheme");
+            if (obj instanceof JSONObject) {
+                js.put("isAutoCalc", ((JSONObject) obj).getBoolean("isAutoCalc"));
+            } else if (obj instanceof JSONArray) {
+                js.put("isAutoCalc", ((JSONArray) obj).getJSONObject(0).getBoolean("isAutoCalc"));
+            }
+            crossSection.add(js);
+        }
+        map.put("crossSection", crossSection);
+
+        JSONObject autoforeset = scheme.getJSONObject("autoforeset");
+        //计算延迟时间
+        map.put("delaymulite", autoforeset.getIntValue("delaymulite"));
+        //计算开始时刻
+        map.put("calcHour", autoforeset.getIntValue("calcHour"));
+        //计算间隔
+        map.put("frequency", autoforeset.getIntValue("frequency"));
+
+        Document winDocument = XmlUtil.readXML(System.getProperty("user.dir") + "/conf/forecast/HFWindowConf.xml");
+        String winXmlStr = XmlUtil.toStr(winDocument);
+        JSONObject jsonObject = JSONObject.parseObject(JSONUtil.parseFromXml(winXmlStr).toString());
+
+        JSONArray forecastPeriodArr = jsonObject.getJSONObject("window").getJSONObject("HFWinPanelShowConfig").getJSONObject("HFWinForeObjAndConditionConfig").getJSONObject("initConfig").getJSONArray("forecastPeriod");
+
+        for (int i = 0; i < forecastPeriodArr.size(); i++) {
+            JSONObject object = forecastPeriodArr.getJSONObject(i);
+            if (StrUtil.equals(object.getString("timeType"), "RSHour")) {
+                map.put("value", object.getIntValue("value"));
+            }
+
+
+        }
+
+
+        return new Message().ok(HttpStatus.HTTP_OK, "success").addData("content", map);
+    }
+
+    public static Message automaticSetting(JSONObject params) throws DocumentException {
+        JSONObject content = params.getJSONObject("content");
+        //计算延迟时间
+        String delaymulite = content.getString("delaymulite");
+        //计算开始时刻
+        String calcHour = content.getString("calcHour");
+        //计算间隔
+        String frequency = content.getString("frequency");
+        //预报时段长度
+        String value = content.getString("value");
+
+        List<JSONObject> crossList = content.getJSONArray("crossSection").toJavaList(JSONObject.class);
+
+        String path = System.getProperty("user.dir") + "/conf/forecast/HFSchemeConf.xml";
+        //读取HFSchemeConf.xml
+        Document document = XmlUtil.readXML(path);
+        String xmlStr = XmlUtil.toStr(document);
+        JSONObject json = JSONObject.parseObject(JSONUtil.parseFromXml(xmlStr).toString());
+        //获取断面列表
+        JSONObject scheme = json.getJSONObject("foreSchemeSet").getJSONObject("scheme");
+        JSONArray arr = scheme.getJSONObject("basin").getJSONObject("watershed").getJSONObject("course").getJSONArray("foreObj");
+
+        for (int i = 0; i < arr.size(); i++) {
+            JSONObject jsonObject = arr.getJSONObject(i);
+
+            boolean isAutoCalc = crossList.get(i).getBoolean("isAutoCalc");
+
+            Object obj = jsonObject.get("modelScheme");
+            if (obj instanceof JSONObject) {
+                jsonObject.getJSONObject("modelScheme").put("isAutoCalc", isAutoCalc);
+            } else if (obj instanceof JSONArray) {
+                JSONArray modelArr = jsonObject.getJSONArray("modelScheme");
+                for (int j = 0; j < modelArr.size(); j++) {
+                    modelArr.getJSONObject(j).put("isAutoCalc", isAutoCalc);
+                }
+            }
+        }
+
+        JSONObject autoforeset = scheme.getJSONObject("autoforeset");
+        //计算延迟时间
+        autoforeset.put("delaymulite", delaymulite);
+        //计算开始时刻
+        autoforeset.put("calcHour", calcHour);
+        //计算间隔
+        autoforeset.put("frequency", frequency);
+
+        cn.hutool.json.JSON jsonObject = JSONUtil.parse(json);
+        final String s = JSONUtil.toXmlStr(jsonObject);
+        Document doc = XmlUtil.parseXml(s);
+        XmlUtil.toFile(doc, path, "UTF-8");
+
+        String winPath = System.getProperty("user.dir") + "/conf/forecast/HFWindowConf.xml";
+        Document winDocument = XmlUtil.readXML(winPath);
+        String winXmlStr = XmlUtil.toStr(winDocument);
+        JSONObject js = JSONObject.parseObject(JSONUtil.parseFromXml(winXmlStr).toString());
+
+        JSONArray forecastPeriodArr = js.getJSONObject("window").getJSONObject("HFWinPanelShowConfig").getJSONObject("HFWinForeObjAndConditionConfig").getJSONObject("initConfig").getJSONArray("forecastPeriod");
+
+        for (int i = 0; i < forecastPeriodArr.size(); i++) {
+
+            JSONObject object = forecastPeriodArr.getJSONObject(i);
+
+            if (StrUtil.equals(object.getString("timeType"), "RSHour")) {
+                object.put("value", value);
+            }
+        }
+        cn.hutool.json.JSON jsonObj = JSONUtil.parse(js);
+        String sObj = JSONUtil.toXmlStr(jsonObj);
+        // 解析XML前替换非法实体
+        sObj = sObj.replace("&sup3;", "³"); // 处理 sup3
+        sObj = sObj.replace("&sup2;", "²");  // 核心修复：sup2 → ²
+        // 可选：补充其他常见实体（如需要）
+        sObj = sObj.replace("&nbsp;", " ");
+        sObj = sObj.replace("&copy;", "©");
+
+        // 安全解析
+        Document docObj = XmlUtil.parseXml(sObj);
+        XmlUtil.toFile(docObj, winPath, "UTF-8");
+
+//        new FloodResults().init();
+
+        //先关闭
+        HFAutoForeFloodService.shutDownService();
+        //再启动
+        HFAutoForeFloodService.startService();
+
+        return new Message().ok(HttpStatus.HTTP_OK, "success");
+    }
+
+    public static Message getTreeByChanSha(JSONObject params) throws Exception {
+
+        String YBT = params.getString("YBT");
+        String YBDT = params.getString("YBDT");
+        String YBR = params.getString("YBR");
+        Map<String, Object> result = new HashMap<>();
+        List<HFIdx> hfList = new ArrayList<>();
+        if (StrUtil.isNotEmpty(YBR)) {
+            Calendar ybtStr = RSTime.transStrToTime(YBT, RSTime.RSTimeFormat.LINE, true);
+            Calendar ybdtStr = RSTime.transStrToTime(YBDT, RSTime.RSTimeFormat.LINE, true);
+            hfList = HFDatabaseDoc.readHfidxBS(ybtStr, ybdtStr, YBR);
+        }
+
+        String path = System.getProperty("user.dir") + "/conf/forecast/ResultManagement.xml";
+        //读取HFSchemeConf.xml
+        Document document = XmlUtil.readXML(path);
+        String xmlStr = XmlUtil.toStr(document);
+        JSONObject json = JSONObject.parseObject(JSONUtil.parseFromXml(xmlStr).toString());
+
+        JSONObject basin = json.getJSONObject("resultManagementSet").getJSONObject("basin");
+        JSONObject parent = new JSONObject();
+        parent.put("name", basin.getString("bsnName"));
+        List<JSONObject> tree = new ArrayList<>();
+        List<JSONObject> arr = basin.getJSONArray("foreObj").toJavaList(JSONObject.class);
+        //超汛限
+        int exceedingFloodLimit = 0;
+        //超堰顶
+        int superDamCrest = 0;
+
+        for (JSONObject jsonObject : arr) {
+            String name = jsonObject.getString("Name");
+            double controlLevel = jsonObject.getDouble("controlLevel");
+            double weirCrestElevation = jsonObject.getDouble("weirCrestElevation");
+
+            if (CollUtil.isNotEmpty(hfList)) {
+                Map<Long, HFIdx> hfMap = hfList.stream().filter(x -> StrUtil.equals(x.getForeObjName(), name)).collect(Collectors.toMap(x1 -> Long.parseLong(x1.getAdid()), x -> x));
+
+                if (MapUtil.isNotEmpty(hfMap)) {
+                    jsonObject.put("name", name);
+                    jsonObject.put("id", jsonObject.getString("Id"));
+                    Object obj = jsonObject.get("modelScheme");
+                    if (obj instanceof JSONObject) {
+                        JSONObject modelScheme = jsonObject.getJSONObject("modelScheme");
+                        modelScheme.put("name", modelScheme.getString("modelSchName"));
+                        modelScheme.put("id", modelScheme.getString("modelSchID"));
+                        List<JSONObject> modelSchemeList = new ArrayList<>();
+                        modelSchemeList.add(modelScheme);
+                        jsonObject.put("children", modelSchemeList);
+
+                        Long adId = modelScheme.getLong("forecastStageID");
+                        HFIdx hfIdx = hfMap.get(adId);
+                        if (hfIdx != null && hfIdx.getHffl() > controlLevel) {
+                            exceedingFloodLimit++;
+                        }
+                        if (hfIdx != null && hfIdx.getHffl() > weirCrestElevation) {
+                            superDamCrest++;
+                        }
+                    } else if (obj instanceof JSONArray) {
+                        List<JSONObject> modelSchemeList = jsonObject.getJSONArray("modelScheme").toJavaList(JSONObject.class);
+
+                        for (JSONObject modelScheme : modelSchemeList) {
+                            modelScheme.put("name", modelScheme.getString("modelSchName"));
+                            modelScheme.put("id", modelScheme.getString("modelSchID"));
+                        }
+                        jsonObject.put("children", modelSchemeList);
+                    }
+
+
+                }
+
+            }
+
+        }
+
+        parent.put("children", arr);
+        tree.add(parent);
+
+        result.put("tree", tree);
+        result.put("exceedingFloodLimit", exceedingFloodLimit);
+        result.put("superDamCrest", superDamCrest);
+
+        return new Message().ok(HttpStatus.HTTP_OK, "success").addData("content", result);
+    }
+    public static Message getFlowLevelRainfallByCS(JSONObject params) {
+
+        long forecastInflowID = params.getLong("forecastInflowID");
+        long forecastStageID = params.getLong("forecastStageID");
+        String ybt = params.getString("YBT");
+        String ybdt = params.getString("YBDT");
+
+        Object[] param = new Object[]{forecastInflowID, DateUtil.calendar(DateUtil.parseDateTime(ybt)), DateUtil.calendar(DateUtil.parseDateTime(ybdt))};
+        String mark = "hf_read_adxld_bs";
+        List<ADXLD> flowList = DBManager.getTable(mark, ADXLD.class, param);
+
+        param[0] = forecastStageID;
+        List<ADXLD> stageList = DBManager.getTable(mark, ADXLD.class, param);
+        Map<String, Double> map = new HashMap<>();
+        if (CollUtil.isNotEmpty(stageList)) {
+            map = stageList.stream().collect(Collectors.toMap(x -> DateUtil.formatDateTime(DateUtil.date(x.getDt())), x2 -> x2.getD(), (v1, v2) -> v2));
+        }
+
+        List<JSONObject> answer = new ArrayList<>();
+        for (ADXLD adXLD : flowList) {
+
+            JSONObject js = new JSONObject();
+            String time = DateUtil.formatDateTime(DateUtil.date(adXLD.getDt()));
+            js.put(TIME_STYLE, time);
+            js.put("flow", adXLD.getD());
+            js.put("level", map.get(time));
+            js.put("rain", adXLD.getFp());
+            answer.add(js);
+        }
+
+        return new Message().ok(HttpStatus.HTTP_OK, "success").addData("content", answer);
+    }
 
 
 }

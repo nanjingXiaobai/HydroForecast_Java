@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
  * @Description
  * @creatTime 2020-03-26
  */
+@CrossOrigin(originPatterns = "*") // 换成 originPatterns// 允许所有外网源访问
 @RestController
 @RequestMapping("/forecast")
 public class CevCommonDataController {
