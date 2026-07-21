@@ -57,8 +57,10 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.*;
 import java.util.Date;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @PropertySource(value = {"classpath:floodConfig.properties",}, encoding = "utf-8")
@@ -248,8 +250,8 @@ public class FloodResults {
 
     public static Message runoffParam(JSONObject params) {
 
-        String schemeName = params.getString("schemeName");
         String userName = params.getString("userName");
+        String schemeName = params.getString("schemeName");
         Map<HFSchUnit, Map<String, String>> map = hfWebService.getUnitParamMap(userName, schemeName);
 
         Map<String, Map<String, String>> answer = new HashMap<>();
@@ -1874,7 +1876,9 @@ public class FloodResults {
 
         Map mapTypes = JSON.parseObject(params.toJSONString());
 
+        System.out.println("正在获取HFWebService.getSingleResultMapList数据1"+ "-----------" + Instant.now());
         List<Map<String, String>> list = HFWebService.getSingleResultMapList(mapTypes, defaulttype);
+        System.out.println("已完成HFWebService.getSingleResultMapList获取数据");
 
         result.put("top", list);
 
@@ -1917,7 +1921,9 @@ public class FloodResults {
             fldIdStr = (String) mapTypes.get("方案描述");
         }
 
+        System.out.println("正在获取HFWebService.getSingleResultList数据2" + "-----------" + Instant.now());
         Object[] arr = HFWebService.getSingleResultList(mapTypes, fldIdStr, defaulttype);
+        System.out.println("已完成HFWebService.getSingleResultList获取数据");
 
         Map<Calendar, Map<String, String>> map = (Map) arr[0];
 
@@ -4585,6 +4591,7 @@ public class FloodResults {
     public static Message aSetOfProcesses(JSONObject params) {
 
         String userName = params.getString("userName");
+        String schemeName = params.getString("schemeName");
         //10.默认进行预报计算、存库
         //对应方法：boolean doDefaultForecast(String userName)
         //传入参数：用户名
@@ -4592,7 +4599,11 @@ public class FloodResults {
 
         hfWebService.initialize(userName, hWindow, hfScheme);
 
-        boolean flag = hfWebService.doDefaultForecast(userName, Calendar.getInstance());
+        if (schemeName == null || schemeName.trim().isEmpty()) {
+            return new Message().error(HttpStatus.HTTP_BAD_REQUEST, "schemeName不能为空");
+        }
+
+        boolean flag = hfWebService.doDefaultForecast(userName, Calendar.getInstance(), schemeName);
 
         if (flag) {
             return new Message().ok(HttpStatus.HTTP_OK, "success");
@@ -6088,6 +6099,65 @@ public class FloodResults {
         String ybt = params.getString("YBT");
         String ybdt = params.getString("YBDT");
 
+        Calendar startCal = DateUtil.calendar(DateUtil.parseDateTime(ybt));
+        Calendar endCal = DateUtil.calendar(DateUtil.parseDateTime(ybdt));
+        String mark = "hf_read_adxld_bs";
+
+        // 1. 并行查询 (节省 1.5 秒)
+        CompletableFuture<List<ADXLD>> flowListFuture = CompletableFuture.supplyAsync(() -> {
+            Object[] paramFlow = new Object[]{forecastInflowID, startCal, endCal};
+            return DBManager.getTable(mark, ADXLD.class, paramFlow);
+        });
+
+        CompletableFuture<List<ADXLD>> stageListFuture = CompletableFuture.supplyAsync(() -> {
+            Object[] paramStage = new Object[]{forecastStageID, startCal, endCal};
+            return DBManager.getTable(mark, ADXLD.class, paramStage);
+        });
+
+        List<ADXLD> flowList = flowListFuture.join();
+        List<ADXLD> stageList = stageListFuture.join();
+
+        // 2. 构建 Map：使用 Calendar 的 getTimeInMillis() 获取 Long 型时间戳
+        Map<Long, Double> levelMap = new HashMap<>(stageList.size());
+        if (CollUtil.isNotEmpty(stageList)) {
+            for (ADXLD x : stageList) {
+                if (x.getDt() != null) {
+                    // 修复点 1：Calendar 获取 long 时间戳用 getTimeInMillis()
+                    levelMap.put(x.getDt().getTimeInMillis(), x.getD());
+                }
+            }
+        }
+
+        // 3. 组装结果
+        List<Map<String, Object>> answer = new ArrayList<>(flowList.size());
+        for (ADXLD adXLD : flowList) {
+            Map<String, Object> row = new HashMap<>(8);
+
+            String time = "";
+            Double levelValue = null;
+
+            if (adXLD.getDt() != null) {
+                // 修复点 2：先用 getTime() 将 Calendar 转为 Date，再格式化
+                time = DateUtil.formatDateTime(adXLD.getDt().getTime());
+                // 修复点 3：同样用 getTimeInMillis() 去 Map 里精准极速匹配
+                levelValue = levelMap.get(adXLD.getDt().getTimeInMillis());
+            }
+
+            row.put(TIME_STYLE, time);
+            row.put("flow", adXLD.getD());
+            row.put("level", levelValue);
+            row.put("rain", adXLD.getFp());
+
+            answer.add(row);
+        }
+
+        return new Message().ok(HttpStatus.HTTP_OK, "success").addData("content", answer);
+
+        /*long forecastInflowID = params.getLong("forecastInflowID");
+        long forecastStageID = params.getLong("forecastStageID");
+        String ybt = params.getString("YBT");
+        String ybdt = params.getString("YBDT");
+
         Object[] param = new Object[]{forecastInflowID, DateUtil.calendar(DateUtil.parseDateTime(ybt)), DateUtil.calendar(DateUtil.parseDateTime(ybdt))};
         String mark = "hf_read_adxld_bs";
         List<ADXLD> flowList = DBManager.getTable(mark, ADXLD.class, param);
@@ -6111,7 +6181,7 @@ public class FloodResults {
             answer.add(js);
         }
 
-        return new Message().ok(HttpStatus.HTTP_OK, "success").addData("content", answer);
+        return new Message().ok(HttpStatus.HTTP_OK, "success").addData("content", answer);*/
     }
 
 

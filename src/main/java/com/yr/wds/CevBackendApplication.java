@@ -1,7 +1,6 @@
 package com.yr.wds;
 
 
-import com.nari.slsd.hydro.backend.HFAutoForeService;
 import com.nari.slsd.hydro.backend.TestMainPanel;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -42,8 +41,7 @@ public class CevBackendApplication {
 //            TestMainPanel.main(args);
 //        });
         //开始自动预报
-        HFAutoForeService.main(args);
-
+//        HFAutoForeService.main(args);
 
         System.out.println(" ......................阿弥陀佛......................\n"+
                 "                       _oo0oo_                      \n"+

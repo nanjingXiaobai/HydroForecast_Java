@@ -48,4 +48,34 @@ public class FileServiceController {
 
     }
 
+    @RequestMapping(value = "/resultTableExcelPlus", method = RequestMethod.POST)
+    @ResponseBody
+    public void resultTableExcelPlus(HttpServletResponse httpResponse, @RequestParam String condition) throws Exception {
+
+        JSONObject paramJson = JSONObject.parseObject(condition);
+
+        new ExcleUtils().exportResultTableExcelPlus(paramJson, httpResponse);
+
+    }
+
+    @RequestMapping(value = "/calculateTrafficExcel", method = RequestMethod.POST)
+    @ResponseBody
+    public void calculateTrafficExcel(HttpServletResponse httpResponse, @RequestParam String condition) throws Exception {
+
+        JSONObject paramJson = JSONObject.parseObject(condition);
+
+        new ExcleUtils().exportCalculateTrafficExcel(paramJson, httpResponse);
+
+    }
+
+    @RequestMapping(value = "/resultStandardDataExcel", method = RequestMethod.POST)
+    @ResponseBody
+    public void resultStandardDataExcel(HttpServletResponse httpResponse, @RequestParam String condition) throws Exception {
+
+        JSONObject paramJson = JSONObject.parseObject(condition);
+
+        new ExcleUtils().exportResultStandardDataExcel(paramJson, httpResponse);
+
+    }
+
 }

@@ -162,6 +162,7 @@ public class FloodForecast {
                 break;
             case "flood_resultData_byTime":                 //根据选中方案的某一个预报序列返回时间序列值
                 return_data = new Message().ok(666, "success").addData("data", FloodResults.getResultDataByTime(query_params));
+                //return_data = new Message().ok(666, "success").addData("data", "");
                 break;
 
             /****************************乌江结果管理-站点预报过程查看***************************/

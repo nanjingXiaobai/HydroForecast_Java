@@ -11,6 +11,8 @@ import com.yr.wds.xinyidai.common.cev.flood.util.DateFormatter;
 import com.yr.wds.xinyidai.common.cev.flood.util.Message;
 import com.yr.wds.xinyidai.common.cev.flood.util.TimeUtil;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -36,6 +38,7 @@ import java.util.stream.Collectors;
  */
 public class WujiangStationProcessResult {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(WujiangStationProcessResult.class);
     private static final String CONFIG_PATH = System.getProperty("user.dir") + "/conf/forecast/stationForecastProcess.json";
     private static final String ALL_MODEL = "全部模型方案";
     private static final String ALL_FORECASTER = "全部";
@@ -71,7 +74,7 @@ public class WujiangStationProcessResult {
                     .filter(item -> StringUtils.isBlank(keyword) || matchKeyword(item, keyword))
                     .collect(Collectors.toList());
             if (onlyHasData) {
-                List<JSONObject> hasDataSequences = sequences.stream().filter(WujiangStationProcessResult::hasPlan).collect(Collectors.toList());
+                List<JSONObject> hasDataSequences = filterSequencesWithPlan(sequences);
                 if (!hasDataSequences.isEmpty()) {
                     sequences = hasDataSequences;
                 }
@@ -117,6 +120,7 @@ public class WujiangStationProcessResult {
     }
 
     public static Message query(JSONObject params) {
+        LOGGER.info("[flood_stationProcess_query] requestParams={}", JSON.toJSONString(params));
         JSONObject config = loadConfig();
         JSONObject page = config.getJSONObject("page");
         int maxPlanCount = intValue(page, "maxPlanCount", DEFAULT_MAX_PLAN_COUNT);
@@ -132,6 +136,12 @@ public class WujiangStationProcessResult {
 
         List<ADXLD> values = queryAdxld(plans);
         Map<String, List<ADXLD>> valueMap = values.stream().collect(Collectors.groupingBy(WujiangStationProcessResult::adxldKey));
+        List<String> unmatchedPlanKeys = plans.stream()
+                .map(WujiangStationProcessResult::planKey)
+                .filter(key -> !valueMap.containsKey(key))
+                .collect(Collectors.toList());
+        LOGGER.info("[flood_stationProcess_query] hfidxCount={}, adxldCount={}, matchedPlanCount={}, unmatchedPlanCount={}, unmatchedPlanKeys={}",
+                plans.size(), values.size(), plans.size() - unmatchedPlanKeys.size(), unmatchedPlanKeys.size(), unmatchedPlanKeys);
 
         int maxStep = 0;
         List<JSONObject> tableData = new ArrayList<>();
@@ -164,6 +174,7 @@ public class WujiangStationProcessResult {
         summary.put("digit", digit);
         summary.put("hasMore", hasMore);
         data.put("summary", summary);
+        LOGGER.info("[flood_stationProcess_query] responsePlanCount={}, maxStep={}, hasMore={}", tableData.size(), maxStep, hasMore);
         return new Message().ok(666, "success").addData("data", data);
     }
 
@@ -215,20 +226,27 @@ public class WujiangStationProcessResult {
         List<Object> args = new ArrayList<>();
         StringBuilder sql = new StringBuilder("select ").append(HFIDX_FIELDS).append(" from HFIDX where 1=1 ");
 
-        String foreObjName = firstNotBlank(value(params, "foreObjName"), value(params, "stationName"));
-        String secName = firstNotBlank(value(params, "secName"), value(params, "stationName"));
-        if (StringUtils.isNotBlank(foreObjName) && StringUtils.isNotBlank(secName) && StringUtils.equals(foreObjName, secName)) {
-            sql.append(" and (FOREOBJNAME = ? or SECNAME = ?) ");
-            args.add(foreObjName);
-            args.add(secName);
+        String sequenceCode = value(params, "sequenceCode");
+        String explicitAdid = StringUtils.isNumeric(sequenceCode) ? sequenceCode : "";
+        if (StringUtils.isNotBlank(explicitAdid)) {
+            sql.append(" and ADID = ? ");
+            args.add(explicitAdid);
         } else {
-            if (StringUtils.isNotBlank(foreObjName)) {
-                sql.append(" and FOREOBJNAME = ? ");
+            String foreObjName = firstNotBlank(value(params, "foreObjName"), value(params, "stationName"));
+            String secName = firstNotBlank(value(params, "secName"), value(params, "stationName"));
+            if (StringUtils.isNotBlank(foreObjName) && StringUtils.isNotBlank(secName) && StringUtils.equals(foreObjName, secName)) {
+                sql.append(" and (FOREOBJNAME = ? or SECNAME = ?) ");
                 args.add(foreObjName);
-            }
-            if (StringUtils.isNotBlank(secName)) {
-                sql.append(" and SECNAME = ? ");
                 args.add(secName);
+            } else {
+                if (StringUtils.isNotBlank(foreObjName)) {
+                    sql.append(" and FOREOBJNAME = ? ");
+                    args.add(foreObjName);
+                }
+                if (StringUtils.isNotBlank(secName)) {
+                    sql.append(" and SECNAME = ? ");
+                    args.add(secName);
+                }
             }
         }
 
@@ -259,14 +277,18 @@ public class WujiangStationProcessResult {
         }
 
         sql.append(" order by YBT asc, YBDT asc, SCHNAME asc ");
+        logSql("HFIDX", sql.toString(), args);
         try {
-            List<HFIdx> plans = DBManager.executeSql(sql.toString(), HFIdx.class, args.toArray(), "wds");
-            return plans.stream()
-                    .filter(item -> matchRestType(item, params))
-                    .filter(item -> matchForecastType(item, params))
+            List<HFIdx> rawPlans = DBManager.executeSql(sql.toString(), HFIdx.class, args.toArray(), "wds");
+            List<HFIdx> plans = rawPlans.stream()
+                    .filter(item -> StringUtils.isNotBlank(explicitAdid) || matchRestType(item, params))
+                    .filter(item -> StringUtils.isNotBlank(explicitAdid) || matchForecastType(item, params))
                     .collect(Collectors.toList());
+            LOGGER.info("[flood_stationProcess_query][HFIDX] rawCount={}, filteredCount={}, explicitAdid={}",
+                    rawPlans.size(), plans.size(), StringUtils.defaultIfBlank(explicitAdid, "--"));
+            return plans;
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("[flood_stationProcess_query][HFIDX] query failed", e);
             return Collections.emptyList();
         }
     }
@@ -275,25 +297,78 @@ public class WujiangStationProcessResult {
         if (plans.isEmpty()) {
             return Collections.emptyList();
         }
-        List<ADXLD> result = new ArrayList<>();
-        for (List<HFIdx> batch : batches(plans, 80)) {
-            StringBuilder sql = new StringBuilder("SELECT ADID,T,DT,D,S,FP,YBDT FROM ADXLD WHERE ADID IN (");
-            List<Object> args = new ArrayList<>();
-            for (int i = 0; i < batch.size(); i++) {
-                if (i > 0) {
-                    sql.append(",");
-                }
-                sql.append("?");
-                args.add(batch.get(i).getAdid());
+
+        Map<String, HFIdx> uniquePlans = new LinkedHashMap<>();
+        for (HFIdx plan : plans) {
+            uniquePlans.putIfAbsent(planKey(plan), plan);
+        }
+
+        StringBuilder sql = new StringBuilder("SELECT ADID,T,DT,D,S,FP,YBDT FROM ADXLD WHERE ");
+        List<Object> args = new ArrayList<>();
+        int index = 0;
+        for (HFIdx plan : uniquePlans.values()) {
+            if (index++ > 0) {
+                sql.append(" OR ");
             }
-            sql.append(") ORDER BY ADID ASC,T ASC,YBDT ASC,DT ASC");
-            try {
-                result.addAll(DBManager.executeSql(sql.toString(), ADXLD.class, args.toArray(), "wds"));
-            } catch (Exception e) {
-                e.printStackTrace();
+            sql.append("(ADID = ?");
+            args.add(plan.getAdid());
+            if (plan.getYbt() != null) {
+                sql.append(" AND T = ?");
+                args.add(plan.getYbt());
+            }
+            if (plan.getYbdt() != null) {
+                sql.append(" AND YBDT = ?");
+                args.add(plan.getYbdt());
+            }
+            sql.append(")");
+        }
+        sql.append(" ORDER BY ADID ASC,T ASC,YBDT ASC,DT ASC");
+        logSql("ADXLD", sql.toString(), args);
+
+        long start = System.currentTimeMillis();
+        try {
+            List<ADXLD> result = DBManager.executeSql(sql.toString(), ADXLD.class, args.toArray(), "wds");
+            LOGGER.info("[flood_stationProcess_query][ADXLD] requestedPlanCount={}, uniquePlanCount={}, resultCount={}, elapsedMs={}",
+                    plans.size(), uniquePlans.size(), result.size(), System.currentTimeMillis() - start);
+            return result;
+        } catch (Exception e) {
+            LOGGER.error("[flood_stationProcess_query][ADXLD] batch query failed", e);
+            return Collections.emptyList();
+        }
+    }
+
+    private static void logSql(String stage, String sql, List<Object> args) {
+        String flag = "TREE_HFIDX".equals(stage) ? "flood_stationProcess_tree" : "flood_stationProcess_query";
+        LOGGER.info("[{}][{}] parameterizedSql={}", flag, stage, sql);
+        LOGGER.info("[{}][{}] parameters={}", flag, stage, args);
+        LOGGER.info("[{}][{}] executableSql={}", flag, stage, renderSql(sql, args));
+    }
+
+    private static String renderSql(String sql, List<Object> args) {
+        StringBuilder result = new StringBuilder();
+        int argIndex = 0;
+        for (int i = 0; i < sql.length(); i++) {
+            char ch = sql.charAt(i);
+            if (ch == '?' && argIndex < args.size()) {
+                result.append(sqlLiteral(args.get(argIndex++)));
+            } else {
+                result.append(ch);
             }
         }
-        return result;
+        return result.toString();
+    }
+
+    private static String sqlLiteral(Object value) {
+        if (value == null) {
+            return "NULL";
+        }
+        if (value instanceof Calendar) {
+            return "TO_DATE('" + formatFull((Calendar) value) + "','YYYY-MM-DD HH24:MI:SS')";
+        }
+        if (value instanceof Number) {
+            return value.toString();
+        }
+        return "'" + value.toString().replace("'", "''") + "'";
     }
 
     private static List<JSONObject> querySequenceFromHfidx(String keyword, JSONObject config) {
@@ -395,13 +470,60 @@ public class WujiangStationProcessResult {
         return seq;
     }
 
-    private static boolean hasPlan(JSONObject sequence) {
-        JSONObject params = new JSONObject();
-        params.put("foreObjName", sequence.getString("foreObjName"));
-        params.put("secName", sequence.getString("secName"));
-        params.put("restType", sequence.getString("restType"));
-        params.put("forecastType", sequence.getString("forecastType"));
-        return !queryPlans(params, false).isEmpty();
+    private static List<JSONObject> filterSequencesWithPlan(List<JSONObject> sequences) {
+        if (sequences.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Object> args = new ArrayList<>();
+        boolean allHaveAdid = sequences.stream()
+                .map(item -> item.getString("sequenceCode"))
+                .allMatch(StringUtils::isNumeric);
+        StringBuilder sql = new StringBuilder("select ").append(HFIDX_FIELDS).append(" from HFIDX");
+        if (allHaveAdid) {
+            sql.append(" where ADID in (");
+            for (int i = 0; i < sequences.size(); i++) {
+                if (i > 0) {
+                    sql.append(",");
+                }
+                sql.append("?");
+                args.add(sequences.get(i).getString("sequenceCode"));
+            }
+            sql.append(")");
+        }
+        logSql("TREE_HFIDX", sql.toString(), args);
+
+        long start = System.currentTimeMillis();
+        try {
+            List<HFIdx> plans = DBManager.executeSql(sql.toString(), HFIdx.class, args.toArray(), "wds");
+            List<JSONObject> result = sequences.stream()
+                    .filter(sequence -> plans.stream().anyMatch(plan -> matchesSequence(plan, sequence)))
+                    .collect(Collectors.toList());
+            LOGGER.info("[flood_stationProcess_tree] configuredSequenceCount={}, hfidxCount={}, matchedSequenceCount={}, elapsedMs={}",
+                    sequences.size(), plans.size(), result.size(), System.currentTimeMillis() - start);
+            return result;
+        } catch (Exception e) {
+            LOGGER.error("[flood_stationProcess_tree] batch HFIDX query failed, keep configured tree", e);
+            return Collections.emptyList();
+        }
+    }
+
+    private static boolean matchesSequence(HFIdx plan, JSONObject sequence) {
+        String sequenceCode = sequence.getString("sequenceCode");
+        if (StringUtils.isNumeric(sequenceCode)) {
+            return StringUtils.equals(sequenceCode, plan.getAdid());
+        }
+
+        String foreObjName = firstNotBlank(sequence.getString("foreObjName"), sequence.getString("stationName"));
+        String secName = firstNotBlank(sequence.getString("secName"), sequence.getString("stationName"));
+        boolean stationMatched;
+        if (StringUtils.isNotBlank(foreObjName) && StringUtils.isNotBlank(secName) && StringUtils.equals(foreObjName, secName)) {
+            stationMatched = StringUtils.equals(foreObjName, plan.getForeObjName()) || StringUtils.equals(secName, plan.getSecName());
+        } else {
+            stationMatched = (StringUtils.isBlank(foreObjName) || StringUtils.equals(foreObjName, plan.getForeObjName()))
+                    && (StringUtils.isBlank(secName) || StringUtils.equals(secName, plan.getSecName()));
+        }
+        return stationMatched && matchRestType(plan, sequence) && matchForecastType(plan, sequence);
     }
 
     private static JSONArray buildTableHeader(int maxStep) {
