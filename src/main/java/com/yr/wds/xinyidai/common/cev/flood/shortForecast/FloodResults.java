@@ -30,10 +30,7 @@ import com.nari.slsd.hydro.backend.unified.base.util.RSTime;
 import com.nari.slsd.hydro.backend.unified.constant.EnumConstant;
 import com.nari.slsd.hydro.backend.unified.constant.FilePathConstant;
 import com.nari.slsd.hydro.backend.unified.dbi.HFDatabaseDoc;
-import com.nari.slsd.hydro.backend.unified.dobj.ADXLD;
-import com.nari.slsd.hydro.backend.unified.dobj.HFIdx;
-import com.nari.slsd.hydro.backend.unified.dobj.HFRunConSet;
-import com.nari.slsd.hydro.backend.unified.dobj.HPSTimeDoubleValue;
+import com.nari.slsd.hydro.backend.unified.dobj.*;
 import com.sgepri.ce.db.ResultSetInterface;
 import com.sgepri.ce.db.util.DBOpUtil;
 import com.sgepri.ce.db.util.DBSplitUtil;
@@ -49,6 +46,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -165,6 +164,7 @@ public class FloodResults {
         //方案类型
         List<String> faList = hfWebService.getAllSchemeNameList();
 
+
         //获取所有的预报模式
         List<String> ybList = hfWebService.getAllForeModelList();
 
@@ -191,14 +191,32 @@ public class FloodResults {
             //获取页面显示的时间
             Calendar calendar = hfWebService.getForecastBTime(params.getString("userName"), x);
 
-            RSTime.RSTimeType timeType = RSTime.RSTimeType.getTimeTypeByDescription(x);
+            HFSchemeType type = HFSchemeType.getSchemeTypeByName(x);
+            RSTime.RSTimeType timeType = type.getTimeType();
+
+            //RSTime.RSTimeType timeType = RSTime.RSTimeType.getTimeTypeByDescription(x);
 
             String time = DataTransferUtil.CalendarToString(calendar, timeType, RSTime.RSTimeFormat.LINE);
 
             timeMap.put(x, time);
         });
 
+        String currentSchemeName = faList.isEmpty() ? null : faList.get(0);
+        HFSchemeType currentSchemeType = StrUtil.isBlank(currentSchemeName)
+                ? null
+                : HFSchemeType.getSchemeTypeByName(currentSchemeName);
+        RSTime.RSTimeType currentTimeType = currentSchemeType == null
+                ? null
+                : currentSchemeType.getTimeType();
+        String timeUnit = StrUtil.nullToEmpty(currentSchemeName)
+                .replaceFirst("^\\d+", "")
+                .trim();
+        List<Integer> foreRainShowStepList = getForeRainShowStepList(
+                currentTimeType == null ? null : currentTimeType.name());
+
         result.put("faList", faList);       //方案类型
+        result.put("foreRainShowStepList", foreRainShowStepList); //预报降雨展示步长
+        result.put("foreRainShowStepUnit", timeUnit); //预报降雨展示步长单位
         result.put("ybList", ybList);       //预报模式
         result.put("lyMap", lyMap);         //流域
         result.put("ybObList", ybObList);   //预报对象
@@ -207,6 +225,51 @@ public class FloodResults {
 
         return new Message().ok(666, "success").addData("data", result);
 
+    }
+
+    private static List<Integer> getForeRainShowStepList(String timeTypeName) {
+        if (StrUtil.isBlank(timeTypeName)) {
+            return Collections.emptyList();
+        }
+
+        List<Integer> defaultSteps = Arrays.asList(1, 3);
+        File windowConfig = hWindow != null
+                ? hWindow
+                : new File(System.getProperty("user.dir") + "/conf/forecast/HFWindowConf.xml");
+        if (!windowConfig.isFile()) {
+            return defaultSteps;
+        }
+
+        try {
+            Document document = XmlUtil.readXML(windowConfig);
+            NodeList configs = document.getElementsByTagName("RainShowTimeStep");
+            for (int i = 0; i < configs.getLength(); i++) {
+                Element config = (Element) configs.item(i);
+                String timeType = getFirstElementText(config, "timeType");
+                if (!timeTypeName.equalsIgnoreCase(StrUtil.trim(timeType))) {
+                    continue;
+                }
+
+                String stepsText = getFirstElementText(config, "steps");
+                List<Integer> steps = Arrays.stream(StrUtil.nullToEmpty(stepsText).split(","))
+                        .map(String::trim)
+                        .filter(StrUtil::isNotBlank)
+                        .filter(NumberUtil::isInteger)
+                        .map(Integer::valueOf)
+                        .filter(step -> step > 0)
+                        .distinct()
+                        .collect(Collectors.toList());
+                return steps.isEmpty() ? defaultSteps : steps;
+            }
+        } catch (Exception ignored) {
+            return defaultSteps;
+        }
+        return defaultSteps;
+    }
+
+    private static String getFirstElementText(Element parent, String tagName) {
+        NodeList nodes = parent.getElementsByTagName(tagName);
+        return nodes.getLength() == 0 ? null : nodes.item(0).getTextContent();
     }
 
 
@@ -236,8 +299,11 @@ public class FloodResults {
 
         String userName = jsonObject.getString("userName");
 
+        HFSchemeType type = HFSchemeType.getSchemeTypeByName(falx);
+        RSTime.RSTimeType timeType = type.getTimeType();
+
         //根据时间字符串获取时间类型
-        RSTime.RSTimeType timeType = RSTime.RSTimeType.getTimeTypeByDescription(falx);
+        //RSTime.RSTimeType timeType = RSTime.RSTimeType.getTimeTypeByDescription(falx);
         //将时间转Calendar
         Calendar foreBTime = DataTransferUtil.stringToCalendar(time, timeType, RSTime.RSTimeFormat.LINE);
 
@@ -746,6 +812,19 @@ public class FloodResults {
         return foundScheme.getTimeType();
     }
 
+    private static RSTime.RSTimeType getTimeKey(String userName, String schemeTypeName) {
+        HFScheme foundScheme = hfWebService.getSelectedScheme(userName);
+        if (foundScheme != null) {
+            return foundScheme.getTimeType();
+        }
+
+        HFSchemeType schemeType = HFSchemeType.getSchemeTypeByName(schemeTypeName);
+        if (schemeType == null) {
+            throw new IllegalArgumentException("No selected forecast scheme for user and invalid falx: " + schemeTypeName);
+        }
+        return schemeType.getTimeType();
+    }
+
     public static Message achievementDisplay(JSONObject params) throws Exception {
 
 
@@ -780,7 +859,7 @@ public class FloodResults {
         //序列类型（0:不考虑降雨,1:倾向值,2:上限值,3:下限值）
         String type = params.getString("type");
 
-        RSTime.RSTimeType rsTimeType = getTimeKey(userName);
+        RSTime.RSTimeType rsTimeType = getTimeKey(userName, params.getString("falx"));
 
         //接受模型方案
         List<String> modelS = null;

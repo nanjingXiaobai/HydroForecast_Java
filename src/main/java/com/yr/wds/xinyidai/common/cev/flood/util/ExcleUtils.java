@@ -21,7 +21,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.nari.slsd.hps.dbmgr.conf.SqlManager;
 import com.nari.slsd.hps.dbmgr.dao.ConnectionJDBC;
-import com.nari.slsd.hydro.backend.HFWebService;
+import com.nari.slsd.hydro.backend.hf.model.TopologyModel.HFSection;
 import com.yr.wds.xinyidai.common.cev.flood.shortForecast.FloodResults;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.poi.ss.usermodel.ClientAnchor;
@@ -67,11 +67,13 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -480,14 +482,14 @@ public class ExcleUtils {
     }
 
     private List<JSONObject> resolveAchievementStationParams(JSONObject queryParam) {
-        List<JSONObject> ybdxStationParams = resolveAchievementStationParamsByYbdx(queryParam);
-        if (!ybdxStationParams.isEmpty()) {
-            return ybdxStationParams;
-        }
-
         List<JSONObject> allStationParams = resolveAllAchievementStationParams(queryParam);
         if (!allStationParams.isEmpty()) {
             return allStationParams;
+        }
+
+        List<JSONObject> ybdxStationParams = resolveAchievementStationParamsByYbdx(queryParam);
+        if (!ybdxStationParams.isEmpty()) {
+            return ybdxStationParams;
         }
 
         List<JSONObject> stationParams = new ArrayList<>();
@@ -540,18 +542,7 @@ public class ExcleUtils {
             JSONObject item = JSONObject.parseObject(queryParam.toJSONString());
             item.put("dx", stationName);
             item.put("name", stationName);
-            if (item.get("isCalc") == null) {
-                item.put("isCalc", false);
-            }
-            if (item.get("isRC") == null) {
-                item.put("isRC", true);
-            }
-            if (item.get("modelSchName") == null) {
-                item.put("modelSchName", "");
-            }
-            if (StrUtil.isBlank(item.getString("type"))) {
-                item.put("type", "1");
-            }
+            normalizeAchievementParam(item);
             stationParams.add(item);
         }
         return stationParams;
@@ -568,95 +559,54 @@ public class ExcleUtils {
 
     private List<JSONObject> resolveAllAchievementStationParams(JSONObject queryParam) {
         List<JSONObject> stationParams = new ArrayList<>();
-        try {
-            JSONObject initParam = buildAchievementInitParam(queryParam);
-            Message message = FloodResults.init(initParam);
-            JSONObject data = JSONObject.parseObject(JSON.toJSONString(message.getData()));
-            JSONObject initObj = data.getJSONObject("initObj");
-            JSONObject skdd = data.getJSONObject("skdd");
-            if (initObj == null || initObj.isEmpty()) {
-                return stationParams;
-            }
+        String userName = queryParam.getString("userName");
+        String falx = queryParam.getString("falx");
+        String basinName = queryParam.getString("ly");
+        JSONArray forecastObjects = queryParam.getJSONArray("ybdx");
+        if (StrUtil.isBlank(userName) || StrUtil.isBlank(falx) || StrUtil.isBlank(basinName)
+                || forecastObjects == null || forecastObjects.isEmpty() || FloodResults.hfWebService == null) {
+            return stationParams;
+        }
 
-            Set<String> stationNames = new TreeSet<>();
-            if (skdd != null && !skdd.isEmpty()) {
-                stationNames.addAll(skdd.keySet());
-            } else {
-                for (String name : initObj.keySet()) {
-                    String foreObjName = initObj.getString(name);
-                    if (StrUtil.isNotBlank(name) && StrUtil.isNotBlank(foreObjName) && !StrUtil.equals(name, foreObjName)) {
-                        stationNames.add(name);
-                    }
-                }
-            }
+        List<String> forecastObjectNames = JSONArray.parseArray(forecastObjects.toJSONString(), String.class);
+        Map<HFSection, String> stationMap = FloodResults.hfWebService.getAllReservoirSecMap(
+                userName, falx, basinName, forecastObjectNames);
+        if (stationMap == null || stationMap.isEmpty()) {
+            return stationParams;
+        }
 
-            for (String stationName : stationNames) {
-                String foreObjName = initObj.getString(stationName);
-                if (StrUtil.isBlank(foreObjName)) {
-                    continue;
-                }
-                JSONObject item = JSONObject.parseObject(queryParam.toJSONString());
-                item.put("falx", initParam.getString("falx"));
-                item.put("ly", initParam.getString("ly"));
-                item.put("ybdx", initParam.getJSONArray("ybdx"));
-                item.put("name", stationName);
-                item.put("dx", foreObjName);
-                stationParams.add(item);
+        List<Map.Entry<HFSection, String>> stations = new ArrayList<>(stationMap.entrySet());
+        stations.sort(Comparator.comparing(entry -> entry.getKey() == null ? "" : entry.getKey().getName(),
+                Comparator.nullsFirst(String::compareTo)));
+        for (Map.Entry<HFSection, String> station : stations) {
+            HFSection section = station.getKey();
+            String stationName = section == null ? null : section.getName();
+            String forecastObjectName = station.getValue();
+            if (StrUtil.isBlank(stationName) || StrUtil.isBlank(forecastObjectName)) {
+                continue;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            JSONObject item = JSONObject.parseObject(queryParam.toJSONString());
+            item.put("name", stationName);
+            item.put("dx", forecastObjectName);
+            normalizeAchievementParam(item);
+            stationParams.add(item);
         }
         return stationParams;
     }
 
-    private JSONObject buildAchievementInitParam(JSONObject queryParam) throws Exception {
-        JSONObject initParam = JSONObject.parseObject(queryParam.toJSONString());
-        if (initParam.getJSONArray("ybdx") != null && !initParam.getJSONArray("ybdx").isEmpty()
-                && StrUtil.isNotBlank(initParam.getString("falx"))
-                && StrUtil.isNotBlank(initParam.getString("ly"))) {
-            return initParam;
+    private void normalizeAchievementParam(JSONObject item) {
+        if (item.get("isCalc") == null) {
+            item.put("isCalc", false);
         }
-
-        Message message = FloodResults.defaultData(initParam);
-        JSONObject data = JSONObject.parseObject(JSON.toJSONString(message.getData().get("data")));
-        JSONObject lyMap = data.getJSONObject("lyMap");
-        String falx = resolveSchemeType(initParam.getString("falx"), initParam.getString("ly"), data.getJSONArray("faList"), lyMap);
-        if (StrUtil.isNotBlank(falx)) {
-            initParam.put("falx", falx);
+        if (item.get("isRC") == null) {
+            item.put("isRC", true);
         }
-        if (StrUtil.isBlank(initParam.getString("ly"))) {
-            JSONArray lyList = lyMap == null ? null : lyMap.getJSONArray(falx);
-            if (lyList != null && !lyList.isEmpty()) {
-                initParam.put("ly", lyList.getString(0));
-            }
+        if (item.get("modelSchName") == null) {
+            item.put("modelSchName", "");
         }
-
-        if (initParam.getJSONArray("ybdx") == null || initParam.getJSONArray("ybdx").isEmpty()) {
-            JSONObject ybObList = data.getJSONObject("ybObList");
-            JSONArray foreObjNames = ybObList == null ? null : ybObList.getJSONArray(initParam.getString("ly"));
-            if (foreObjNames != null && !foreObjNames.isEmpty()) {
-                initParam.put("ybdx", foreObjNames);
-            }
+        if (StrUtil.isBlank(item.getString("type"))) {
+            item.put("type", "1");
         }
-        return initParam;
-    }
-
-    private String resolveSchemeType(String requestedFalx, String basinName, JSONArray faList, JSONObject lyMap) {
-        if (StrUtil.isNotBlank(requestedFalx) && (lyMap == null || lyMap.containsKey(requestedFalx))) {
-            return requestedFalx;
-        }
-        if (lyMap != null && StrUtil.isNotBlank(basinName)) {
-            for (String schemeType : lyMap.keySet()) {
-                JSONArray basinList = lyMap.getJSONArray(schemeType);
-                if (basinList != null && basinList.contains(basinName)) {
-                    return schemeType;
-                }
-            }
-        }
-        if (faList != null && !faList.isEmpty()) {
-            return faList.getString(0);
-        }
-        return requestedFalx;
     }
 
     private String resolveHistoryTableName(JSONObject paramJson) {
@@ -1121,16 +1071,20 @@ public class ExcleUtils {
             List<ChartSeries> rainSeries = new ArrayList<>();
             List<ChartSeries> flowSeries = new ArrayList<>();
             List<ChartSeries> waterSeries = new ArrayList<>();
+            int lineColorIndex = 0;
             for (int colIndex = 1; colIndex < tableRef.columns.size(); colIndex++) {
-                String label = tableRef.columns.get(colIndex).label;
-                ChartSeries series = new ChartSeries(label);
-                if (isRainColumn(label)) {
+                ExcelColumn column = tableRef.columns.get(colIndex);
+                String seriesName = resolveChartSeriesName(column, tableRef.columns);
+                if (isRainColumn(column)) {
+                    Color color = rainSeries.isEmpty() ? new Color(64, 158, 255)
+                            : colorForSeries(seriesName, lineColorIndex++ + 2);
+                    ChartSeries series = new ChartSeries(seriesName, color, "rain");
                     rainSeries.add(series);
-                } else if (isWaterColumn(label)) {
+                } else if (isWaterColumn(column)) {
+                    ChartSeries series = new ChartSeries(seriesName, lineColor(lineColorIndex++), "water");
                     waterSeries.add(series);
-                } else if (isFlowColumn(label) || flowSeries.isEmpty()) {
-                    flowSeries.add(series);
                 } else {
+                    ChartSeries series = new ChartSeries(seriesName, lineColor(lineColorIndex++), "flow");
                     flowSeries.add(series);
                 }
             }
@@ -1145,11 +1099,11 @@ public class ExcleUtils {
                 int flowIndex = 0;
                 int waterIndex = 0;
                 for (int colIndex = 1; colIndex < tableRef.columns.size(); colIndex++) {
-                    String label = tableRef.columns.get(colIndex).label;
+                    ExcelColumn column = tableRef.columns.get(colIndex);
                     Double value = readNumericCell(row, tableRef.firstColumn + colIndex, formatter);
-                    if (isRainColumn(label)) {
+                    if (isRainColumn(column)) {
                         rainSeries.get(rainIndex++).values.add(value);
-                    } else if (isWaterColumn(label)) {
+                    } else if (isWaterColumn(column)) {
                         waterSeries.get(waterIndex++).values.add(value);
                     } else {
                         flowSeries.get(flowIndex++).values.add(value);
@@ -1176,14 +1130,16 @@ public class ExcleUtils {
 
     private void drawForecastChart(Graphics2D g, int width, int height, String title, List<String> times,
                                    List<ChartSeries> rainSeries, List<ChartSeries> flowSeries, List<ChartSeries> waterSeries) {
-        int left = 135;
+        int left = 165;
         int right = 135;
         int titleTop = 34;
         int legendTop = 72;
-        int rainTop = 150;
         int panelGap = 32;
+        g.setFont(new Font("Microsoft YaHei", Font.PLAIN, 16));
+        int legendBottom = drawLegend(g, width, legendTop, rainSeries, flowSeries, waterSeries);
+        int rainTop = Math.max(150, legendBottom + 34);
         int rainHeight = rainSeries.isEmpty() ? 0 : 120;
-        int flowTop = rainSeries.isEmpty() ? 125 : rainTop + rainHeight + panelGap;
+        int flowTop = rainSeries.isEmpty() ? Math.max(125, legendBottom + 34) : rainTop + rainHeight + panelGap;
         int waterTop = waterSeries.isEmpty() ? 0 : height - 190;
         int flowHeight = waterSeries.isEmpty() ? height - flowTop - 58 : Math.max(120, waterTop - flowTop - panelGap);
         int waterHeight = waterSeries.isEmpty() ? 0 : 145;
@@ -1193,26 +1149,25 @@ public class ExcleUtils {
         g.setColor(new Color(40, 40, 40));
         drawCenteredString(g, title, 0, titleTop, width);
 
-        g.setFont(new Font("Microsoft YaHei", Font.PLAIN, 18));
-        drawLegend(g, width, legendTop, rainSeries, flowSeries, waterSeries);
-
         if (!rainSeries.isEmpty()) {
             drawPanel(g, left, rainTop, plotWidth, rainHeight);
-            drawYAxisName(g, "\u96e8\u91cf(mm)", 54, rainTop + rainHeight / 2);
+            drawYAxisName(g, "\u96e8\u91cf(mm)", 42, rainTop + rainHeight / 2);
             drawXAxis(g, left, rainTop - 36, plotWidth, times, true);
             drawValueAxis(g, left, rainTop, rainHeight, 0, maxValue(rainSeries, 10), true);
             drawRainBars(g, left, rainTop, plotWidth, rainHeight, times.size(), rainSeries, 0, maxValue(rainSeries, 10));
             drawAxisTimeName(g, left + plotWidth + 24, rainTop + 4);
         } else {
-            flowTop = 125;
+            flowTop = Math.max(125, legendBottom + 34);
             flowHeight = height - flowTop - 58;
         }
 
         if (!flowSeries.isEmpty()) {
             drawPanel(g, left, flowTop, plotWidth, flowHeight);
-            drawYAxisName(g, "\u6d41\u91cf(m\u00b3/s)", 54, flowTop + flowHeight / 2);
-            drawValueAxis(g, left, flowTop, flowHeight, 0, maxFlowValue(flowSeries), false);
-            drawFlowLines(g, left, flowTop, plotWidth, flowHeight, times.size(), flowSeries, 0, maxFlowValue(flowSeries));
+            drawYAxisName(g, "\u6d41\u91cf(m\u00b3/s)", 42, flowTop + flowHeight / 2);
+            AxisRange flowRange = calculateAxisRange(flowSeries, 500D);
+            drawValueAxis(g, left, flowTop, flowHeight, flowRange.min, flowRange.max, false);
+            drawFlowLines(g, left, flowTop, plotWidth, flowHeight, times.size(), flowSeries,
+                    flowRange.min, flowRange.max);
             if (waterSeries.isEmpty()) {
                 drawXAxis(g, left, flowTop + flowHeight + 24, plotWidth, times, false);
                 drawAxisTimeName(g, left + plotWidth + 24, flowTop + flowHeight + 4);
@@ -1221,40 +1176,52 @@ public class ExcleUtils {
 
         if (!waterSeries.isEmpty()) {
             drawPanel(g, left, waterTop, plotWidth, waterHeight);
-            drawYAxisName(g, "\u6c34\u4f4d(m)", 54, waterTop + waterHeight / 2);
-            double maxWater = maxValue(waterSeries, 1);
-            drawValueAxis(g, left, waterTop, waterHeight, 0, maxWater, false);
-            drawFlowLines(g, left, waterTop, plotWidth, waterHeight, times.size(), waterSeries, 0, maxWater);
+            drawYAxisName(g, "\u6c34\u4f4d(m)", 42, waterTop + waterHeight / 2);
+            AxisRange waterRange = calculateAxisRange(waterSeries, null);
+            drawValueAxis(g, left, waterTop, waterHeight, waterRange.min, waterRange.max, false);
+            drawFlowLines(g, left, waterTop, plotWidth, waterHeight, times.size(), waterSeries,
+                    waterRange.min, waterRange.max);
             drawXAxis(g, left, waterTop + waterHeight + 24, plotWidth, times, false);
             drawAxisTimeName(g, left + plotWidth + 24, waterTop + waterHeight + 4);
         }
     }
 
-    private void drawLegend(Graphics2D g, int width, int y, List<ChartSeries> rainSeries, List<ChartSeries> flowSeries, List<ChartSeries> waterSeries) {
-        int x = width / 2 - 310;
-        g.setFont(new Font("Microsoft YaHei", Font.PLAIN, 18));
-        if (!rainSeries.isEmpty()) {
-            g.setColor(new Color(64, 158, 255));
-            g.fillRoundRect(x, y, 36, 20, 6, 6);
-            g.setColor(new Color(80, 80, 80));
-            g.drawString(rainSeries.get(0).name, x + 46, y + 17);
-            x += 215;
+    private int drawLegend(Graphics2D g, int width, int y, List<ChartSeries> rainSeries,
+                           List<ChartSeries> flowSeries, List<ChartSeries> waterSeries) {
+        List<ChartSeries> allSeries = new ArrayList<>();
+        allSeries.addAll(rainSeries);
+        allSeries.addAll(flowSeries);
+        allSeries.addAll(waterSeries);
+        if (allSeries.isEmpty()) {
+            return y;
         }
-        if (!flowSeries.isEmpty()) {
-            g.setColor(colorForSeries(flowSeries.get(0).name, 0));
-            g.setStroke(new BasicStroke(3f));
-            g.drawLine(x, y + 10, x + 42, y + 10);
+
+        int left = 70;
+        int right = width - 70;
+        int x = left;
+        int currentY = y;
+        int rowHeight = 30;
+        FontMetrics metrics = g.getFontMetrics();
+        for (ChartSeries series : allSeries) {
+            int markerWidth = "rain".equals(series.group) ? 36 : 42;
+            int itemWidth = markerWidth + 12 + metrics.stringWidth(series.name) + 28;
+            if (x > left && x + itemWidth > right) {
+                x = left;
+                currentY += rowHeight;
+            }
+
+            g.setColor(series.color);
+            if ("rain".equals(series.group)) {
+                g.fillRoundRect(x, currentY, markerWidth, 20, 6, 6);
+            } else {
+                g.setStroke(new BasicStroke(3f));
+                g.drawLine(x, currentY + 10, x + markerWidth, currentY + 10);
+            }
             g.setColor(new Color(80, 80, 80));
-            g.drawString(flowSeries.get(0).name, x + 52, y + 17);
-            x += 240;
+            g.drawString(series.name, x + markerWidth + 10, currentY + 17);
+            x += itemWidth;
         }
-        if (!waterSeries.isEmpty()) {
-            g.setColor(colorForSeries(waterSeries.get(0).name, flowSeries.size()));
-            g.setStroke(new BasicStroke(3f));
-            g.drawLine(x, y + 10, x + 42, y + 10);
-            g.setColor(new Color(80, 80, 80));
-            g.drawString(waterSeries.get(0).name, x + 52, y + 17);
-        }
+        return currentY + 20;
     }
 
     private void drawPanel(Graphics2D g, int x, int y, int width, int height) {
@@ -1306,10 +1273,12 @@ public class ExcleUtils {
         if (count == 0) {
             return;
         }
+        Shape oldClip = g.getClip();
+        g.clipRect(x, y, width + 1, height + 1);
         int barWidth = Math.max(2, width / Math.max(count * Math.max(seriesList.size(), 1), 1));
         for (int seriesIndex = 0; seriesIndex < seriesList.size(); seriesIndex++) {
             ChartSeries series = seriesList.get(seriesIndex);
-            g.setColor(seriesIndex == 0 ? new Color(64, 158, 255) : colorForSeries(series.name, seriesIndex));
+            g.setColor(series.color);
             if (isZeroSeries(series)) {
                 int zeroY = y;
                 g.setStroke(new BasicStroke(2f));
@@ -1318,7 +1287,7 @@ public class ExcleUtils {
             }
             for (int i = 0; i < series.values.size(); i++) {
                 Double value = series.values.get(i);
-                if (value == null) {
+                if (!isDrawableChartValue(value)) {
                     continue;
                 }
                 int center = x + (count == 1 ? 0 : width * i / (count - 1));
@@ -1326,21 +1295,24 @@ public class ExcleUtils {
                 g.fillRect(center - barWidth / 2 + seriesIndex * barWidth, y, barWidth, Math.max(barHeight, value > 0 ? 1 : 0));
             }
         }
+        g.setClip(oldClip);
     }
 
     private void drawFlowLines(Graphics2D g, int x, int y, int width, int height, int count, List<ChartSeries> seriesList, double min, double max) {
         if (count == 0 || max <= min) {
             return;
         }
+        Shape oldClip = g.getClip();
+        g.clipRect(x, y, width + 1, height + 1);
         for (int seriesIndex = 0; seriesIndex < seriesList.size(); seriesIndex++) {
             ChartSeries series = seriesList.get(seriesIndex);
-            g.setColor(colorForSeries(series.name, seriesIndex));
+            g.setColor(series.color);
             g.setStroke(new BasicStroke(3f));
             Integer lastX = null;
             Integer lastY = null;
             for (int i = 0; i < series.values.size(); i++) {
                 Double value = series.values.get(i);
-                if (value == null) {
+                if (!isDrawableChartValue(value)) {
                     lastX = null;
                     lastY = null;
                     continue;
@@ -1354,6 +1326,11 @@ public class ExcleUtils {
                 lastY = yy;
             }
         }
+        g.setClip(oldClip);
+    }
+
+    private boolean isDrawableChartValue(Double value) {
+        return value != null && !value.isNaN() && !value.isInfinite();
     }
 
     private boolean isZeroSeries(ChartSeries series) {
@@ -1385,11 +1362,11 @@ public class ExcleUtils {
                 new Color(92, 107, 192),
                 new Color(141, 110, 99)
         };
-        int colorIndex = index;
-        if (StrUtil.isNotBlank(name)) {
-            colorIndex = Math.abs(name.hashCode());
-        }
-        return colors[colorIndex % colors.length];
+        return colors[Math.floorMod(index, colors.length)];
+    }
+
+    private Color lineColor(int index) {
+        return colorForSeries(null, index == 0 ? 0 : index + 1);
     }
 
     private void drawYAxisName(Graphics2D g, String text, int x, int y) {
@@ -1434,9 +1411,32 @@ public class ExcleUtils {
         return Math.max(minMax, scaled);
     }
 
-    private double maxFlowValue(List<ChartSeries> seriesList) {
-        double max = maxValue(seriesList, 0);
-        return max <= 500 ? 500 : max;
+    private AxisRange calculateAxisRange(List<ChartSeries> seriesList, Double fixedMaximum) {
+        double dataMin = Double.POSITIVE_INFINITY;
+        double dataMax = Double.NEGATIVE_INFINITY;
+        for (ChartSeries series : seriesList) {
+            for (Double value : series.values) {
+                if (!isDrawableChartValue(value)) {
+                    continue;
+                }
+                dataMin = Math.min(dataMin, value);
+                dataMax = Math.max(dataMax, value);
+            }
+        }
+
+        if (!Double.isFinite(dataMin) || !Double.isFinite(dataMax)) {
+            return new AxisRange(0, fixedMaximum == null ? 1 : fixedMaximum);
+        }
+
+        double padding = (dataMax - dataMin) * 0.1D;
+        double min = Math.max(0, dataMin - padding);
+        double max = fixedMaximum != null && dataMax <= fixedMaximum
+                ? fixedMaximum
+                : dataMax + padding;
+        if (max <= min) {
+            max = min + Math.max(Math.abs(min) * 0.1D, 1D);
+        }
+        return new AxisRange(min, max);
     }
 
     private Double readNumericCell(Row row, int columnIndex, DataFormatter formatter) {
@@ -1454,16 +1454,56 @@ public class ExcleUtils {
         }
     }
 
-    private boolean isRainColumn(String label) {
-        return label != null && (label.contains("\u964d\u96e8") || label.contains("\u96e8\u91cf"));
+    private boolean isRainColumn(ExcelColumn column) {
+        if (StrUtil.isNotBlank(column.chartType)) {
+            return hasChartType(column, "rain");
+        }
+        return containsAny(column.chartLabel, "\u964d\u96e8", "\u96e8\u91cf")
+                || containsAny(column.label, "\u964d\u96e8", "\u96e8\u91cf");
     }
 
-    private boolean isFlowColumn(String label) {
-        return label != null && label.contains("\u6d41\u91cf");
+    private boolean isFlowColumn(ExcelColumn column) {
+        if (StrUtil.isNotBlank(column.chartType)) {
+            return hasChartType(column, "flow");
+        }
+        return containsAny(column.chartLabel, "\u6d41\u91cf", "\u51fa\u5e93")
+                || containsAny(column.label, "\u6d41\u91cf", "\u51fa\u5e93");
     }
 
-    private boolean isWaterColumn(String label) {
-        return label != null && label.contains("\u6c34\u4f4d");
+    private boolean isWaterColumn(ExcelColumn column) {
+        if (StrUtil.isNotBlank(column.chartType)) {
+            return hasChartType(column, "water");
+        }
+        return containsAny(column.chartLabel, "\u6c34\u4f4d")
+                || containsAny(column.label, "\u6c34\u4f4d");
+    }
+
+    private boolean hasChartType(ExcelColumn column, String type) {
+        return StrUtil.isNotBlank(column.chartType) && type.equalsIgnoreCase(column.chartType);
+    }
+
+    private boolean containsAny(String value, String... keys) {
+        if (value == null) {
+            return false;
+        }
+        for (String key : keys) {
+            if (value.contains(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String resolveChartSeriesName(ExcelColumn column, List<ExcelColumn> columns) {
+        String name = StrUtil.isNotBlank(column.chartLabel) ? column.chartLabel : column.label;
+        int sameNameCount = 0;
+        for (ExcelColumn candidate : columns) {
+            String candidateName = StrUtil.isNotBlank(candidate.chartLabel) ? candidate.chartLabel : candidate.label;
+            if (StrUtil.equals(name, candidateName)) {
+                sameNameCount++;
+            }
+        }
+        return sameNameCount > 1 ? column.label : name;
     }
 
     private String formatAxisValue(double value) {
@@ -1507,10 +1547,18 @@ public class ExcleUtils {
             }
             return;
         }
+        if (Boolean.FALSE.equals(header.getBoolean("showCol"))) {
+            return;
+        }
 
         String prop = header.getString("prop");
         if (prop != null && prop.length() > 0) {
-            columns.add(new ExcelColumn(prop, fullLabel.length() == 0 ? prop : fullLabel));
+            String chartLabel = header.getString("showName");
+            if (StrUtil.isBlank(chartLabel)) {
+                chartLabel = label;
+            }
+            columns.add(new ExcelColumn(prop, fullLabel.length() == 0 ? prop : fullLabel,
+                    chartLabel, header.getString("type")));
         }
     }
 
@@ -1584,7 +1632,12 @@ public class ExcleUtils {
     }
 
     private void writeWorkbookResponse(XSSFWorkbook workbook, HttpServletResponse response, String fileName) throws IOException {
-        response.setHeader("Content-Disposition", "attachment;filename=" + new String(fileName.getBytes(StandardCharsets.UTF_8), "ISO8859-1") + ".xlsx");
+        String downloadFileName = fileName.endsWith(".xlsx") ? fileName : fileName + ".xlsx";
+        String legacyFileName = new String(downloadFileName.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1)
+                .replace("\\", "_").replace("\"", "_");
+        String encodedFileName = URLEncoder.encode(downloadFileName, StandardCharsets.UTF_8.name()).replace("+", "%20");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + legacyFileName
+                + "\"; filename*=UTF-8''" + encodedFileName);
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setCharacterEncoding("utf-8");
         workbook.write(response.getOutputStream());
@@ -1648,10 +1701,18 @@ public class ExcleUtils {
     private static class ExcelColumn {
         private final String prop;
         private final String label;
+        private final String chartLabel;
+        private final String chartType;
 
         private ExcelColumn(String prop, String label) {
+            this(prop, label, label, null);
+        }
+
+        private ExcelColumn(String prop, String label, String chartLabel, String chartType) {
             this.prop = prop;
             this.label = label;
+            this.chartLabel = chartLabel;
+            this.chartType = chartType;
         }
     }
 
@@ -1691,10 +1752,24 @@ public class ExcleUtils {
 
     private static class ChartSeries {
         private final String name;
+        private final Color color;
+        private final String group;
         private final List<Double> values = new ArrayList<>();
 
-        private ChartSeries(String name) {
+        private ChartSeries(String name, Color color, String group) {
             this.name = name;
+            this.color = color;
+            this.group = group;
+        }
+    }
+
+    private static class AxisRange {
+        private final double min;
+        private final double max;
+
+        private AxisRange(double min, double max) {
+            this.min = min;
+            this.max = max;
         }
     }
 }
