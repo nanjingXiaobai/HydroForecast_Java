@@ -1,5 +1,6 @@
 package com.yr.wds.xinyidai.common.cev.flood.yunnandatang.api;
 
+import com.yr.wds.xinyidai.common.cev.flood.stationconfig.ConditionalOnYunnanDatangFeature;
 import com.yr.wds.xinyidai.common.cev.flood.stationconfig.StationModelConfigException;
 import com.yr.wds.xinyidai.common.cev.flood.yunnandatang.service.ForecastResultService;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import java.util.Map;
 /** 与新工程路由一致的结果保存和管理接口。 */
 @CrossOrigin(originPatterns = "*")
 @RestController
+@ConditionalOnYunnanDatangFeature
 @RequestMapping("/forecast/results")
 public class ForecastResultController {
     private final ForecastResultService service;

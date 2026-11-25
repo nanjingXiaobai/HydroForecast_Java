@@ -7,6 +7,12 @@ import java.util.Map;
 
 /** 一份已经解析并校验通过的电站模型配置快照。 */
 public class StationModelConfiguration {
+    private boolean tankAutoEnabled;
+    private String tankAutoTime = "23:00";
+    public boolean isTankAutoEnabled() { return tankAutoEnabled; }
+    public void setTankAutoEnabled(boolean value) { tankAutoEnabled = value; }
+    public String getTankAutoTime() { return tankAutoTime; }
+    public void setTankAutoTime(String value) { tankAutoTime = value; }
     private String schemaVersion;
     private String configVersion;
     private String environment;

@@ -9,6 +9,7 @@ import java.util.Map;
 
 /** 将内部配置快照转换为前端稳定使用的 JSON 数据。 */
 @Service
+@ConditionalOnYunnanDatangFeature
 public class StationConfigQueryService {
     private final StationModelRegistry registry;
 

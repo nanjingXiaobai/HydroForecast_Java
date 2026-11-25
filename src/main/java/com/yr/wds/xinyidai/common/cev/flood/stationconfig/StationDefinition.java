@@ -2,6 +2,8 @@ package com.yr.wds.xinyidai.common.cev.flood.stationconfig;
 
 /** 电站或内部计算分区定义。 */
 public class StationDefinition {
+    private final java.util.Map<String, String> resultPoints = new java.util.LinkedHashMap<String, String>();
+    public java.util.Map<String, String> getResultPoints() { return resultPoints; }
     private String code;
     private String name;
     private String module;

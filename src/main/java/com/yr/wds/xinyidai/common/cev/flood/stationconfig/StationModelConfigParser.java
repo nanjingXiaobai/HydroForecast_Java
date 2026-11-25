@@ -25,6 +25,7 @@ import java.util.Set;
  * 和外部实体的 XML，避免配置文件成为 XXE 攻击入口。</p>
  */
 @Component
+@ConditionalOnYunnanDatangFeature
 public class StationModelConfigParser {
 
     public StationModelConfiguration parse(InputStream inputStream) {
@@ -40,6 +41,14 @@ public class StationModelConfigParser {
             configuration.setSchemaVersion(required(root, "schemaVersion"));
             configuration.setConfigVersion(required(root, "configVersion"));
             configuration.setEnvironment(attribute(root, "environment"));
+            Element auto = directChild(root, "tankAutoForecast");
+            if (auto != null) {
+                String time = required(auto, "time");
+                if (!time.matches("([01][0-9]|2[0-3]):[0-5][0-9]"))
+                    throw error("tankAutoForecast.time必须是HH:mm，例如23:00");
+                configuration.setTankAutoTime(time);
+                configuration.setTankAutoEnabled(booleanAttribute(auto, "enabled", false));
+            }
             parseModels(root, configuration);
             parseParameterProfiles(root, configuration);
             parseSourceDataProfiles(root, configuration);
@@ -69,6 +78,7 @@ public class StationModelConfigParser {
             profile.setHistoricalTable(attribute(element, "historicalTable"));
             profile.setForecastTable(attribute(element, "forecastTable"));
             profile.setForecastRegionId(attribute(element, "forecastRegionId"));
+            profile.setForecastRegionWeight(attribute(element, "forecastRegionWeight"));
             profile.setForecastSubtype(nullableIntegerAttribute(element, "forecastSubtype"));
             profile.setTimeStep(attribute(element, "timeStep"));
             profile.setMappingStatus(required(element, "mappingStatus"));
@@ -172,6 +182,13 @@ public class StationModelConfigParser {
             StationDefinition station = new StationDefinition();
             station.setCode(required(element, "code"));
             station.setName(required(element, "name"));
+            for (Element point : directChildren(element, "resultPoint")) {
+                String kind = required(point, "kind"), field = required(point, "field");
+                String id = required(point, "idAttrCode");
+                if (!id.matches("[0-9]+")) throw error("预报结果点号必须是数字: " + station.getCode());
+                if (station.getResultPoints().put(kind + "." + field, id) != null)
+                    throw error("重复的预报结果点号配置: " + station.getCode() + "/" + kind + "." + field);
+            }
             station.setModelRef(requiredFirstAttribute(element, "model", "modelRef"));
             ModelDefinition model = findModel(configuration, station.getModelRef());
             station.setModule(firstNonEmpty(attribute(element, "module"), model == null ? "" : model.getModule()));
@@ -217,6 +234,7 @@ public class StationModelConfigParser {
         if (gfs != null) {
             profile.setForecastTable("WEA_GFSFORRAIN");
             profile.setForecastRegionId(attribute(gfs, "regionId"));
+            profile.setForecastRegionWeight(attribute(gfs, "regionWeight"));
             profile.setForecastSubtype(nullableIntegerAttribute(gfs, "subtype"));
             complete = !profile.getForecastRegionId().isEmpty() && profile.getForecastSubtype() != null;
         }

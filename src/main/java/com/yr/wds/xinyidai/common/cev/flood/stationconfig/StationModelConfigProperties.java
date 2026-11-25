@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 /** 生产工程电站模型 XML 的外部文件配置。 */
 @Component
+@ConditionalOnYunnanDatangFeature
 @ConfigurationProperties(prefix = "service.yunnan-datang.station-config")
 public class StationModelConfigProperties {
     /** 相对路径以程序工作目录为基准，保持生产工程现有 conf 使用习惯。 */

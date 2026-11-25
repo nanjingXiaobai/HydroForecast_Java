@@ -36,6 +36,11 @@
         <tomcat.version>9.0.110</tomcat.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
 
 
 

@@ -1,5 +1,6 @@
 package com.yr.wds.xinyidai.common.cev.flood.yunnandatang.service;
 
+import com.yr.wds.xinyidai.common.cev.flood.stationconfig.ConditionalOnYunnanDatangFeature;
 import com.yr.wds.xinyidai.common.cev.flood.stationconfig.StationDefinition;
 import com.yr.wds.xinyidai.common.cev.flood.stationconfig.StationModelConfigException;
 import com.yr.wds.xinyidai.common.cev.flood.yunnandatang.data.ApiCurvePoint;
@@ -16,6 +17,7 @@ import java.util.Map;
 
 /** 使用生产DBManager从INFOMODEL装配API模型参数。 */
 @Service
+@ConditionalOnYunnanDatangFeature
 public class ApiModelParameterService {
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private final ForecastSourceDataRepository repository;
@@ -25,16 +27,22 @@ public class ApiModelParameterService {
     }
 
     public Map<String, Object> load(StationDefinition station, String forecastTime) {
-        String prefix = requireText(station.getCurveName(), "API电站缺少curveName: " + station.getCode());
+        String unitCurveName = requireText(station.getCurveName(), "API电站缺少curveName: " + station.getCode());
+        String prefix = curvePrefix(unitCurveName);
         List<ApiCurvePoint> relation = required(prefix + ".区间降雨径流曲线", "P-Pa-R");
         List<ApiCurvePoint> emk = required(prefix + ".EMK曲线", "EMK");
-        List<ApiCurvePoint> unit = required(prefix + ".基础参数及单位线", "默认单位线");
+        List<ApiCurvePoint> unit = required(unitCurveName, "默认单位线");
         validateUnitLine(prefix, unit);
         int month = month(forecastTime);
         ApiCurvePoint monthPoint = findMonth(emk, month, prefix);
 
         Map<String, Object> result = new LinkedHashMap<String, Object>();
-        result.put("pa0", 12D);
+        result.put("pa0", 30D);
+        result.put("base_flow", 0D);
+        Map<String, Double> monthlyK = new LinkedHashMap<>();
+        for (int m = 1; m <= 12; m++) monthlyK.put(String.valueOf(m), findMonth(emk, m, prefix).getV2());
+        result.put("monthly_k", monthlyK);
+        result.put("calculation_mode", "ANNUAL_EXCEL");
         result.put("k_month", monthPoint.getV2());
         result.put("em_month", monthPoint.getV1());
         result.put("pr_relation_table", relationTable(relation));
@@ -43,7 +51,7 @@ public class ApiModelParameterService {
         unitOptions.add(unitOption("DEFAULT_1", "默认1", defaultOne, unit.get(0).getCurveId()));
         result.put("unit_hydrograph_code", "DEFAULT_1");
         result.put("unit_hydrograph", defaultOne);
-        List<ApiCurvePoint> alternative = repository.queryApiCurvePoints(prefix + ".基础参数及单位线1");
+        List<ApiCurvePoint> alternative = repository.queryApiCurvePoints(unitCurveName + "1");
         if (alternative != null && !alternative.isEmpty()) {
             validateUnitLine(prefix + "第二条", alternative);
             unitOptions.add(unitOption("DEFAULT_2", "默认2", unitValues(alternative),
@@ -67,6 +75,7 @@ public class ApiModelParameterService {
                                                    Map<String, Object> requestParameters) {
         Map<String, Object> result = new LinkedHashMap<String, Object>(databaseParameters);
         if (requestParameters != null) result.putAll(requestParameters);
+        result.put("base_flow", ApiAnnualCalculation.baseFlow(result));
         Object requested = requestParameters == null ? null : requestParameters.get("unitHydrographCode");
         if (requested == null && requestParameters != null) {
             requested = requestParameters.get("unit_hydrograph_code");
@@ -175,6 +184,13 @@ public class ApiModelParameterService {
     private String requireText(String value, String message) {
         if (value == null || value.trim().isEmpty()) throw error(message);
         return value.trim();
+    }
+
+    /** curveName保存数据库完整NAME；模型其它曲线仍以点号前的水库名作为前缀定位。 */
+    private String curvePrefix(String curveName) {
+        int separator = curveName.indexOf(".基础参数及单位");
+        if (separator <= 0) throw error("curveName必须是数据库中的完整单位线名称: " + curveName);
+        return curveName.substring(0, separator);
     }
 
     private StationModelConfigException error(String message) {

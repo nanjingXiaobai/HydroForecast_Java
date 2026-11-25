@@ -2,10 +2,13 @@
 <!--
   云南大唐站点与模型配置（简化版）。
   固定规则无需配置：历史表按模型时步选择HOURDB或DAYDB、预报表WEA_GFSFORRAIN、预报降雨字段AVERPRE。
-  SENID为云南大唐项目自建的8位纯数字业务点号：雨量084、流量083、水位041。
-  GFS区域号为项目自建区域号，预报数据接入程序必须按相同REGID和SUBTYPE写入WEA_GFSFORRAIN。
+  senid属性必须填写现场HOURDB或DAYDB中ID_ATTR_CODE的完整值，例如雨量0335030024.M12000、流量0207000000.W14000。
+  水箱实测点号及权重、预报REGID来自已确认雨量权重Excel；水箱自动预报SUBTYPE为10051。
 -->
-<forecast-station-model-config schemaVersion="2.0" configVersion="2026.07.24" environment="production">
+<forecast-station-model-config schemaVersion="2.0" configVersion="2026.11.04-tank-auto" environment="production">
+
+    <!-- 水箱每日自动计算并保存，北京时间HH:mm，开关和时间支持热更新。 -->
+    <tankAutoForecast enabled="true" time="23:00"/>
 
     <models>
         <model code="API_PPAR_UH" name="API产汇流模型" module="API_MODEL" config="forecast.models.api"/>
@@ -54,122 +57,139 @@
 
     <!--
       point.key是模型字段，senid填写生产历史库完整点号，weight只用于雨量加权。
-      API电站curveName必须与CURVE.NAME中点号前的水库名完全一致。
-      gfs只配置REGID和SUBTYPE，降雨始终读取AVERPRE。
+      API电站curveName必须填写CURVE.NAME中的完整单位线名称。
+      gfs.regionId可填写一个或多个REGID，多个值使用英文逗号分隔；regionWeight为对应子区面积。
+      预报降雨始终读取AVERPRE，多个子区按regionWeight进行面积加权。
     -->
     <stations>
         <station code="API_YUJIANKOU" name="鱼剑口区间" model="API_PPAR_UH" params="API_YUJIANKOU_V1"
-                 curveName="鱼剑口水库">
-            <gfs regionId="910001" subtype="10050"/>
-            <point key="rainfall" name="大月坝" senid="91001084" weight="0.20"/>
-            <point key="rainfall" name="回龙" senid="91002084" weight="0.20"/>
-            <point key="rainfall" name="栗子" senid="91003084" weight="0.20"/>
-            <point key="rainfall" name="石板水坝上" senid="91004084" weight="0.20"/>
-            <point key="rainfall" name="鱼剑口坝上" senid="91005084" weight="0.20"/>
+                 curveName="鱼剑口水库.基础参数及单位线">
+            <resultPoint kind="API" field="*" idAttrCode="21400102031010"/>
+            <gfs regionId="2140010101" subtype="10050"/>
+            <point key="rainfall" name="大月坝" senid="1443059275481344.M12000" weight="0.20"/>
+            <point key="rainfall" name="回龙" senid="1443059268927744.M12000" weight="0.20"/>
+            <point key="rainfall" name="栗子" senid="1443059272261888.M12000" weight="0.20"/>
+            <point key="rainfall" name="石板水坝上" senid="1443556462354688.M12000" weight="0.20"/>
+            <point key="rainfall" name="鱼剑口坝上" senid="1443556478640384.M12000" weight="0.20"/>
         </station>
 
         <station code="API_JIAOMUTANG" name="角木塘" model="API_PPAR_UH" params="API_JIAOMUTANG_V1"
-                 curveName="角木塘水库">
-            <gfs regionId="910002" subtype="10050"/>
-            <point key="rainfall" name="鱼塘坝上" senid="91006084" weight="0.094"/>
-            <point key="rainfall" name="五家院子" senid="91007084" weight="0.108"/>
-            <point key="rainfall" name="大矸" senid="91008084" weight="0.253"/>
-            <point key="rainfall" name="三桥" senid="91009084" weight="0.227"/>
-            <point key="rainfall" name="梅江" senid="91010084" weight="0.292"/>
-            <point key="rainfall" name="角木塘坝上" senid="91011084" weight="0.026"/>
+                 curveName="角木塘水库.基础参数及单位线">
+            <point key="measuredFlow" name="实测流量" senid="1442268967534848.W14000"/>
+            <resultPoint kind="API" field="*" idAttrCode="16300102031004"/>
+            <gfs regionId="1630010101" subtype="10050"/>
+            <point key="rainfall" name="鱼塘坝上" senid="1443555331350784.M12000" weight="0.094"/>
+            <point key="rainfall" name="五家院子" senid="1443057978171648.M12000" weight="0.108"/>
+            <point key="rainfall" name="大矸" senid="1443057981694208.M12000" weight="0.253"/>
+            <point key="rainfall" name="三桥" senid="1443057985265920.M12000" weight="0.227"/>
+            <point key="rainfall" name="梅江" senid="1443057992417536.M12000" weight="0.292"/>
+            <point key="rainfall" name="角木塘坝上" senid="1443555365609728.M12000" weight="0.026"/>
         </station>
 
         <station code="API_TENGZIGOU_UPSTREAM" name="藤子沟水库以上" model="API_PPAR_UH"
-                 params="API_TENGZIGOU_UPSTREAM_V1" curveName="藤子沟水库">
-            <gfs regionId="910003" subtype="10050"/>
-            <point key="rainfall" name="黄水" senid="91012084" weight="0.160"/>
-            <point key="rainfall" name="悦来" senid="91013084" weight="0.188"/>
-            <point key="rainfall" name="三益" senid="91014084" weight="0.169"/>
-            <point key="rainfall" name="官田坝" senid="91015084" weight="0.231"/>
-            <point key="rainfall" name="沙子" senid="91016084" weight="0.208"/>
-            <point key="rainfall" name="藤子沟坝上" senid="91017084" weight="0.044"/>
+                 params="API_TENGZIGOU_UPSTREAM_V1" curveName="藤子沟水库.基础参数及单位">
+            <point key="measuredFlow" name="实测流量" senid="1442269007413504.W14000"/>
+            <resultPoint kind="API" field="*" idAttrCode="21100102031004"/>
+            <gfs regionId="2110010101" subtype="10050"/>
+            <point key="rainfall" name="黄水" senid="1443059236946176.M12000" weight="0.160"/>
+            <point key="rainfall" name="悦来" senid="1443059239862528.M12000" weight="0.188"/>
+            <point key="rainfall" name="三益" senid="1443059243581696.M12000" weight="0.169"/>
+            <point key="rainfall" name="官田坝" senid="1443059262628096.M12000" weight="0.231"/>
+            <point key="rainfall" name="沙子" senid="1443059246915840.M12000" weight="0.208"/>
+            <point key="rainfall" name="藤子沟坝上" senid="1443556426604800.M12000" weight="0.044"/>
         </station>
 
         <station code="API_TENGZIGOU_NIULANKOU" name="藤子沟至牛栏口区间" model="API_PPAR_UH"
-                 params="API_TENGZIGOU_NIULANKOU_V1" curveName="牛栏口水库">
-            <gfs regionId="910004" subtype="10050"/>
-            <point key="rainfall" name="藤子沟坝上" senid="91017084" weight="0.132"/>
-            <point key="rainfall" name="蚕溪" senid="91018084" weight="0.142"/>
-            <point key="rainfall" name="石柱" senid="91019084" weight="0.322"/>
-            <point key="rainfall" name="龙沙" senid="91020084" weight="0.133"/>
-            <point key="rainfall" name="龙池坝" senid="91021084" weight="0.170"/>
-            <point key="rainfall" name="牛栏口坝上" senid="91022084" weight="0.101"/>
+                 params="API_TENGZIGOU_NIULANKOU_V1" curveName="牛栏口水库.基础参数及单位线">
+            <resultPoint kind="API" field="*" idAttrCode="21200102031010"/>
+            <gfs regionId="2120010101" subtype="10050"/>
+            <point key="rainfall" name="藤子沟坝上" senid="1443556426604800.M12000" weight="0.132"/>
+            <point key="rainfall" name="蚕溪" senid="1443059250135296.M12000" weight="0.142"/>
+            <point key="rainfall" name="石柱" senid="1443059233399040.M12000" weight="0.322"/>
+            <point key="rainfall" name="龙沙" senid="1443059256303872.M12000" weight="0.133"/>
+            <point key="rainfall" name="龙池坝" senid="1443059253223680.M12000" weight="0.170"/>
+            <point key="rainfall" name="牛栏口坝上" senid="1443556443627776.M12000" weight="0.101"/>
         </station>
 
         <station code="TANK_JIANGBIN_UPSTREAM" name="江滨以上" model="THREE_LAYER_TANK"
                  params="TANK_JIANGBIN_UPSTREAM_V1">
-            <gfs regionId="910005" subtype="10050"/>
-            <point key="rainfall" name="砚山" senid="91023084" weight="0.05"/>
-            <point key="rainfall" name="绥阳场" senid="91024084" weight="0.28"/>
-            <point key="rainfall" name="江滨" senid="91025084" weight="0.16"/>
-            <point key="rainfall" name="涪洋" senid="91026084" weight="0.13"/>
-            <point key="rainfall" name="丰乐" senid="91027084" weight="0.25"/>
-            <point key="rainfall" name="土溪" senid="91028084" weight="0.13"/>
+            <resultPoint kind="TANK" field="*" idAttrCode="11802203021004"/>
+            <gfs regionId="2000000007" subtype="10051"/>
+            <point key="rainfall" name="砚山" senid="1442852573462784.M12000" weight="0.05"/>
+            <point key="rainfall" name="绥阳场" senid="1442852537647360.M12000" weight="0.28"/>
+            <point key="rainfall" name="江滨" senid="1442852594213120.M12000" weight="0.16"/>
+            <point key="rainfall" name="涪洋" senid="1442852545659136.M12000" weight="0.13"/>
+            <point key="rainfall" name="丰乐" senid="1442852542202112.M12000" weight="0.25"/>
+            <point key="rainfall" name="土溪" senid="1442852617773312.M12000" weight="0.13"/>
         </station>
 
         <station code="TANK_DAHEKOU_UPSTREAM" name="大河口以上" model="THREE_LAYER_TANK"
                  params="TANK_DAHEKOU_UPSTREAM_V1">
-            <gfs regionId="910006" subtype="10050"/>
-            <point key="rainfall" name="朝阳寺" senid="91029084" weight="0.26"/>
-            <point key="rainfall" name="梯子洞" senid="91030084" weight="0.10"/>
-            <point key="rainfall" name="大集" senid="91031084" weight="0.17"/>
-            <point key="rainfall" name="太极" senid="91032084" weight="0.10"/>
-            <point key="rainfall" name="小村" senid="91033084" weight="0.19"/>
-            <point key="rainfall" name="濯河坝" senid="91034084" weight="0.18"/>
+            <resultPoint kind="TANK" field="*" idAttrCode="15400103021004"/>
+            <gfs regionId="2000000006" subtype="10051"/>
+            <point key="rainfall" name="朝阳寺" senid="1442852634059008.M12000" weight="0.26"/>
+            <point key="rainfall" name="梯子洞" senid="1442852620722432.M12000" weight="0.1"/>
+            <point key="rainfall" name="大集" senid="1442852627202304.M12000" weight="0.17"/>
+            <point key="rainfall" name="太极" senid="1442852630429952.M12000" weight="0.1"/>
+            <point key="rainfall" name="小村" senid="1442852624138496.M12000" weight="0.19"/>
+            <point key="rainfall" name="濯河坝" senid="1442852647035136.M12000" weight="0.18"/>
         </station>
 
         <station code="TANK_YANGONG_INTERVAL" name="沿龚区间" model="THREE_LAYER_TANK"
                  params="TANK_YANGONG_INTERVAL_V1">
-            <gfs regionId="910007" subtype="10050"/>
-            <point key="rainfall" name="边山" senid="91035084" weight="0.01"/>
-            <point key="rainfall" name="梯子洞" senid="91030084" weight="0.06"/>
-            <point key="rainfall" name="甘龙" senid="91036084" weight="0.12"/>
-            <point key="rainfall" name="龚滩" senid="91037084" weight="0.03"/>
-            <point key="rainfall" name="红丝" senid="91038084" weight="0.03"/>
-            <point key="rainfall" name="泉口" senid="91039084" weight="0.06"/>
-            <point key="rainfall" name="思渠" senid="91040084" weight="0.12"/>
-            <point key="rainfall" name="天馆" senid="91041084" weight="0.11"/>
-            <point key="rainfall" name="铜西" senid="91042084" weight="0.14"/>
-            <point key="rainfall" name="小河" senid="91043084" weight="0.18"/>
-            <point key="rainfall" name="沿河" senid="91044084" weight="0.14"/>
+            <resultPoint kind="TANK" field="*" idAttrCode="11802403021010"/>
+            <gfs regionId="2000000004" subtype="10051"/>
+            <point key="rainfall" name="边山" senid="1442852580442368.M12000" weight="0.01"/>
+            <point key="rainfall" name="梯子洞" senid="1442852620722432.M12000" weight="0.06"/>
+            <point key="rainfall" name="甘龙" senid="1442852549017856.M12000" weight="0.12"/>
+            <point key="rainfall" name="龚滩" senid="1442852600463616.M12000" weight="0.03"/>
+            <point key="rainfall" name="红丝" senid="1442852576542976.M12000" weight="0.03"/>
+            <point key="rainfall" name="泉口" senid="1442852561101056.M12000" weight="0.06"/>
+            <point key="rainfall" name="思渠" senid="1442852564451584.M12000" weight="0.12"/>
+            <point key="rainfall" name="天馆" senid="1442852568858880.M12000" weight="0.11"/>
+            <point key="rainfall" name="铜西" senid="1442852555211008.M12000" weight="0.14"/>
+            <point key="rainfall" name="小河" senid="1442852551958784.M12000" weight="0.18"/>
+            <point key="rainfall" name="沿河" senid="1442851202294016.M12000" weight="0.14"/>
         </station>
 
         <station code="TANK_GONGPENG_INTERVAL" name="龚彭区间" model="THREE_LAYER_TANK"
                  params="TANK_GONGPENG_INTERVAL_V1">
-            <gfs regionId="910008" subtype="10050"/>
-            <point key="rainfall" name="边山" senid="91035084" weight="0.08"/>
-            <point key="rainfall" name="梯子洞" senid="91030084" weight="0.06"/>
-            <point key="rainfall" name="大元" senid="91045084" weight="0.09"/>
-            <point key="rainfall" name="龚滩" senid="91037084" weight="0.03"/>
-            <point key="rainfall" name="红丝" senid="91038084" weight="0.12"/>
-            <point key="rainfall" name="江滨" senid="91025084" weight="0.03"/>
-            <point key="rainfall" name="彭水坝址" senid="91046084" weight="0.13"/>
-            <point key="rainfall" name="太极" senid="91032084" weight="0.06"/>
-            <point key="rainfall" name="塘坝" senid="91047084" weight="0.20"/>
-            <point key="rainfall" name="砚山" senid="91023084" weight="0.11"/>
-            <point key="rainfall" name="诸佛" senid="91048084" weight="0.09"/>
+            <resultPoint kind="TANK" field="*" idAttrCode="11800103021028"/>
+            <gfs regionId="2000000005" subtype="10051"/>
+            <point key="rainfall" name="边山" senid="1442852580442368.M12000" weight="0.08"/>
+            <point key="rainfall" name="梯子洞" senid="1442852620722432.M12000" weight="0.06"/>
+            <point key="rainfall" name="大元" senid="1442852587135232.M12000" weight="0.09"/>
+            <point key="rainfall" name="龚滩" senid="1442852600463616.M12000" weight="0.03"/>
+            <point key="rainfall" name="红丝" senid="1442852576542976.M12000" weight="0.12"/>
+            <point key="rainfall" name="江滨" senid="1442852594213120.M12000" weight="0.03"/>
+            <point key="rainfall" name="彭水坝址" senid="1443555026657536.M12000" weight="0.13"/>
+            <point key="rainfall" name="太极" senid="1442852630429952.M12000" weight="0.06"/>
+            <point key="rainfall" name="塘坝" senid="1442852584079616.M12000" weight="0.2"/>
+            <point key="rainfall" name="砚山" senid="1442852573462784.M12000" weight="0.11"/>
+            <point key="rainfall" name="诸佛" senid="1442852609286400.M12000" weight="0.09"/>
         </station>
 
         <station code="TANK_PENGSHUI_INFLOW" name="彭水" model="THREE_LAYER_TANK"
                  aggregation="PENGSHUI_INFLOW_FORECAST">
-            <point key="pengshuiInflow" name="彭水入库" senid="91049083"/>
-            <point key="shatuoOutflow" name="沙沱出库" senid="91050083"/>
+            <resultPoint kind="PENGSHUI" field="jiangbinFlow" idAttrCode="11802203021004"/>
+            <resultPoint kind="PENGSHUI" field="dahekouFlow" idAttrCode="15400103021004"/>
+            <resultPoint kind="PENGSHUI" field="yangongFlow" idAttrCode="11802403021010"/>
+            <resultPoint kind="PENGSHUI" field="gongpengFlow" idAttrCode="11800103021028"/>
+            <resultPoint kind="PENGSHUI" field="regionalFlowTotal" idAttrCode="11800103021010"/>
+            <resultPoint kind="PENGSHUI" field="pengshuiInflow" idAttrCode="11800103021004"/>
+            <point key="pengshuiInflow" name="彭水入库" senid="1442213928845568.W14000"/>
+            <point key="shatuoOutflow" name="沙沱出库" senid="1442213919031552.W14100"/>
         </station>
 
         <station code="REGRESSION_SHATUO" name="沙沱" model="SHATUO_LSTM_MOS"
                  params="REGRESSION_SHATUO_AUTO_MOS">
-            <gfs regionId="910009" subtype="10050"/>
-            <point key="shatuoInflow" name="沙沱入库" senid="91051083"/>
-            <point key="shatuoOutflow" name="沙沱出库" senid="91050083"/>
-            <point key="shatuoWaterLevel" name="沙沱水位" senid="91052041"/>
-            <point key="rainfall" name="沙沱雨量" senid="91053084"/>
-            <point key="goupitanInflow" name="构皮滩入库" senid="91054083"/>
-            <point key="goupitanOutflow" name="构皮滩出库" senid="91055083"/>
+            <!-- 现场WEA_GFSFORRAIN未提供沙沱或构皮滩对应REGID，暂由DAYDB多年均值补齐未来雨量。 -->
+            <point key="shatuoInflow" name="沙沱入库" senid="1442213919031552.W14000"/>
+            <point key="shatuoOutflow" name="沙沱出库" senid="1442213919031552.W14100"/>
+            <point key="shatuoWaterLevel" name="沙沱水位" senid="1443555011830016.M11000"/>
+            <point key="rainfall" name="沙沱雨量" senid="1442213919031552.K13100"/>
+            <point key="goupitanInflow" name="构皮滩入库" senid="1442213902123264.W14000"/>
+            <point key="goupitanOutflow" name="构皮滩出库" senid="1442213902123264.W14100"/>
         </station>
     </stations>
 

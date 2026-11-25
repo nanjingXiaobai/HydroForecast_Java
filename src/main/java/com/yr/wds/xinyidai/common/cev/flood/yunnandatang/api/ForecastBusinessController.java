@@ -1,8 +1,11 @@
 package com.yr.wds.xinyidai.common.cev.flood.yunnandatang.api;
 
+import com.yr.wds.xinyidai.common.cev.flood.stationconfig.ConditionalOnYunnanDatangFeature;
 import com.yr.wds.xinyidai.common.cev.flood.stationconfig.StationModelConfigException;
 import com.yr.wds.xinyidai.common.cev.flood.yunnandatang.service.ForecastCalculationService;
 import com.yr.wds.xinyidai.common.cev.flood.yunnandatang.service.ForecastInputAssemblyService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -19,8 +22,10 @@ import java.util.Map;
 /** 三个模型页面共用的自动取数和计算接口。 */
 @CrossOrigin(originPatterns = "*")
 @RestController
+@ConditionalOnYunnanDatangFeature
 @RequestMapping("/forecast")
 public class ForecastBusinessController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ForecastBusinessController.class);
     private final ForecastInputAssemblyService inputService;
     private final ForecastCalculationService calculationService;
 
@@ -37,9 +42,23 @@ public class ForecastBusinessController {
     @PostMapping("/{modelType}/calculate")
     public Map<String, Object> modelCalculate(@PathVariable String modelType,
                                               @RequestBody ForecastContracts.CalculateRequest request) {
-        String module = resolveModule(modelType);
-        prepareInput(request, module);
-        return success(calculationService.calculate(request, module));
+        long startedAt = System.currentTimeMillis();
+        String stationCode = request == null ? null : request.getStationCode();
+        String forecastTime = request == null ? null : request.getForecastTime();
+        LOGGER.info("[云南大唐][预报计算] 收到请求 modelType={}, stationCode={}, forecastTime={}",
+                modelType, stationCode, forecastTime);
+        try {
+            String module = resolveModule(modelType);
+            prepareInput(request, module);
+            Map<String, Object> response = success(calculationService.calculate(request, module));
+            LOGGER.info("[云南大唐][预报计算] 计算完成 modelType={}, stationCode={}, elapsedMs={}",
+                    modelType, stationCode, System.currentTimeMillis() - startedAt);
+            return response;
+        } catch (RuntimeException ex) {
+            LOGGER.error("[云南大唐][预报计算] 计算失败 modelType={}, stationCode={}, forecastTime={}, elapsedMs={}",
+                    modelType, stationCode, forecastTime, System.currentTimeMillis() - startedAt, ex);
+            throw ex;
+        }
     }
 
     private void prepareInput(ForecastContracts.CalculateRequest request, String module) {
@@ -47,13 +66,19 @@ public class ForecastBusinessController {
         if ("TANK_MODEL".equals(module)) {
             boolean hasGroupInput = request.getInputs() != null && !request.getInputs().isEmpty();
             if (!hasGroupInput && request.getInput() == null) {
-                request.setInputs(inputService.assembleTankGroup(toInputQuery(request)));
+                request.setInputs(inputService.assembleTankGroupWithForecast(toInputQuery(request)));
             }
             return;
         }
         if (request.getInput() == null) {
             request.setInput(inputService.assemble(toInputQuery(request), module));
         }
+    }
+
+    /** 水箱加载实测站点输入和WEA预报雨量，页面可直接计算或修改雨量。 */
+    @PostMapping("/tank/inputs")
+    public Map<String,Object> tankInputs(@RequestBody ForecastContracts.InputQueryRequest request) {
+        return success(inputService.assembleTankGroupWithForecast(request));
     }
 
     private ForecastContracts.InputQueryRequest toInputQuery(ForecastContracts.CalculateRequest request) {

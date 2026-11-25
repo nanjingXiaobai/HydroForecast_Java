@@ -11,6 +11,8 @@ public class SourceDataProfileDefinition {
     private String forecastTable;
     /** WEA_GFSFORRAIN.REGID，由现场在 XML 中配置。 */
     private String forecastRegionId;
+    /** 多个GFS子区对应的面积权重，顺序必须与forecastRegionId中的逗号分隔值一致。 */
+    private String forecastRegionWeight;
     /** WEA_GFSFORRAIN.SUBTYPE，由现场在 XML 中配置。 */
     private Integer forecastSubtype;
     private String timeStep;
@@ -27,6 +29,8 @@ public class SourceDataProfileDefinition {
     public void setForecastTable(String forecastTable) { this.forecastTable = forecastTable; }
     public String getForecastRegionId() { return forecastRegionId; }
     public void setForecastRegionId(String forecastRegionId) { this.forecastRegionId = forecastRegionId; }
+    public String getForecastRegionWeight() { return forecastRegionWeight; }
+    public void setForecastRegionWeight(String forecastRegionWeight) { this.forecastRegionWeight = forecastRegionWeight; }
     public Integer getForecastSubtype() { return forecastSubtype; }
     public void setForecastSubtype(Integer forecastSubtype) { this.forecastSubtype = forecastSubtype; }
     public String getTimeStep() { return timeStep; }

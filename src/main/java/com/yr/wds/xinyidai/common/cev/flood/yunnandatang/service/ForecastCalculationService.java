@@ -1,5 +1,6 @@
 package com.yr.wds.xinyidai.common.cev.flood.yunnandatang.service;
 
+import com.yr.wds.xinyidai.common.cev.flood.stationconfig.ConditionalOnYunnanDatangFeature;
 import com.yr.wds.xinyidai.common.cev.flood.stationconfig.StationModelConfigException;
 import com.yr.wds.xinyidai.common.cev.flood.stationconfig.AggregationDefinition;
 import com.yr.wds.xinyidai.common.cev.flood.stationconfig.AggregationSourceDefinition;
@@ -26,6 +27,7 @@ import java.util.UUID;
 
 /** 校验页面快照、转换模型入参并按 XML 路由调用对应的 Python 服务。 */
 @Service
+@ConditionalOnYunnanDatangFeature
 public class ForecastCalculationService {
     private final StationModelRegistry registry;
     private final PythonModelHttpClient modelClient;
@@ -53,6 +55,7 @@ public class ForecastCalculationService {
             throw error("页面模型与当前 XML 配置不一致，请重新加载输入数据");
         }
 
+        ForecastMissingValues.normalize(input, expectedModule);
         String calculationId = UUID.randomUUID().toString();
         Map<String, Object> modelRequest = new LinkedHashMap<String, Object>();
         modelRequest.put("taskId", calculationId);
@@ -61,7 +64,8 @@ public class ForecastCalculationService {
         Map<String, Object> payload = buildPayload(input, request.getParameters(), expectedModule,
                 route.getStation());
         modelRequest.put("payload", payload);
-        Map<String, Object> modelResult = modelClient.invoke(route.getModel(), modelRequest);
+        Map<String, Object> modelResult = "API_MODEL".equals(expectedModule)
+                ? ApiAnnualCalculation.calculate(payload) : modelClient.invoke(route.getModel(), modelRequest);
 
         ForecastContracts.CalculateResponse response = new ForecastContracts.CalculateResponse();
         response.setCalculationId(calculationId);
@@ -76,6 +80,7 @@ public class ForecastCalculationService {
         } else {
             response.setResultData(modelResult);
         }
+        ForecastResultPrecision.applyResultData(response.getResultData());
         return response;
     }
 
@@ -96,6 +101,13 @@ public class ForecastCalculationService {
         appendModelValues(rows, "netRainfall", requiredList(modelResult, "net_rainfall_series"), rainfall, 1);
         appendModelValues(rows, "inflow", requiredList(modelResult, "discharge_series"), rainfall, 1);
         fillMissingFields(rows, "rainfall", "netRainfall", "inflow");
+        String lastRainTime = String.valueOf(rainfall.get(rainfall.size() - 1).get("time"));
+        for (Map.Entry<String, Map<String, Object>> entry : rows.entrySet()) {
+            if (entry.getKey().compareTo(lastRainTime) > 0) {
+                entry.getValue().put("rainfall", 0D);
+                entry.getValue().put("netRainfall", 0D);
+            }
+        }
         Map<String, Object> result = new LinkedHashMap<String, Object>();
         result.put("chartData", new ArrayList<Map<String, Object>>(rows.values()));
         result.put("modelParameters", apiPageModelParameters(modelParameters));
@@ -105,6 +117,7 @@ public class ForecastCalculationService {
     @SuppressWarnings("unchecked")
     private Map<String, Object> apiPageModelParameters(Map<String, Object> parameters) {
         Map<String, Object> display = new LinkedHashMap<String, Object>();
+        display.put("base_flow", ApiAnnualCalculation.baseFlow(parameters));
         display.put("unit_hydrograph_code", parameters == null ? null : parameters.get("unit_hydrograph_code"));
         List<Map<String, Object>> options = new ArrayList<Map<String, Object>>();
         Object source = parameters == null ? null : parameters.get("unit_hydrograph_options");
@@ -220,7 +233,7 @@ public class ForecastCalculationService {
         // 计算时重新查库，页面参数仍可覆盖后触发重新计算。
         Map<String, Object> databaseParameters = apiModelParameterService.load(station, input.getForecastTime());
         Map<String, Object> payload = apiModelParameterService.applyUnitSelection(
-                databaseParameters, copy(parameters));
+                databaseParameters, apiRequestParameters(input, parameters));
         // 返回全部候选单位线，并把本次选中项同步回页面快照。
         Map<String, Object> responseParameters = new LinkedHashMap<String, Object>(databaseParameters);
         responseParameters.putAll(payload);
@@ -228,10 +241,20 @@ public class ForecastCalculationService {
         input.setModelParameters(responseParameters);
         payload.put("stationCode", input.getStationCode());
         payload.put("forecastTime", input.getForecastTime());
-        List<Map<String, Object>> rainfall = areaRainfall(input);
+        List<Map<String, Object>> rainfall = ApiAnnualCalculation.rainfall(input);
         payload.put("rainfallSeries", rainfall);
         payload.put("rainfall_series", values(rainfall));
         return payload;
+    }
+
+    private Map<String, Object> apiRequestParameters(ForecastContracts.InputResponse input,
+                                                      Map<String, Object> parameters) {
+        Map<String,Object> result=copy(parameters);
+        if(!result.containsKey("base_flow") && input.getModelParameters()!=null
+                && input.getModelParameters().containsKey("base_flow")) {
+            result.put("base_flow", input.getModelParameters().get("base_flow"));
+        }
+        return result;
     }
 
     private Map<String, Object> tankPayload(ForecastContracts.InputResponse input,
@@ -241,21 +264,103 @@ public class ForecastCalculationService {
         payload.put("basinCode", input.getStationCode());
         payload.put("forecastTime", input.getForecastTime());
         payload.put("intervalHours", 24);
-        List<Map<String, Object>> rainfall = areaRainfall(input);
+        validateTankRainfall(input);
+        List<Map<String, Object>> rainfall = tankAnnualRainfall(input, station);
         payload.put("rainfallSeries", rainfall);
         payload.put("rainfallSequence", values(rainfall));
         Map<String, Object> initialState = mapValue(parameters, "initialState");
         if (initialState.isEmpty()) {
-            initialState.put("d", 35D);
-            initialState.put("i", 12D);
-            initialState.put("l", 5.5D);
+            initialState.put("d", 15D);
+            initialState.put("i", 15D);
+            initialState.put("l", 15D);
         }
-        payload.put("initialState", initialState);
+        for (String key : Arrays.asList("d", "i", "l")) {
+            Object value = initialState.get(key);
+            if (!(value instanceof Number) || ((Number) value).doubleValue() != 15D)
+                throw error("Excel初始起算种子固定为15，不能用任意日期水深替代: " + key);
+        }
+        // 旧Python首步会加本日雨量；Excel首行D7=15-C7，不加B7。
+        // 仅在调用边界抵消首日雨量，保留真实雨量用于蒸发和结果展示。
+        // d可能为负，这是协议适配值，不是业务蓄水深；不得回写页面/保存快照。
+        Map<String, Object> pythonInitialState = new LinkedHashMap<String, Object>(initialState);
+        pythonInitialState.put("d", 15D - ((Number) rainfall.get(0).get("rainfall")).doubleValue());
+        payload.put("initialState", pythonInitialState);
         TankParameterProfileDefinition profile = registry.getConfiguration().getTankParameterProfileMap()
                 .get(station.getParameterProfileRef());
         if (profile == null) throw error("水箱分区缺少参数方案: " + station.getCode());
         payload.put("modelParameters", new LinkedHashMap<String, Object>(profile.getModelParameters()));
         return payload;
+    }
+
+    private List<Map<String, Object>> tankAnnualRainfall(ForecastContracts.InputResponse input, StationDefinition station) {
+        java.time.LocalDate begin = ForecastDailyRows.parse(input.getForecastBeginTime()).toLocalDate();
+        java.time.LocalDate yearStart = TankDailyForecastService.calculationStart(begin);
+        if (!ForecastDailyRows.parse(input.getForecastTime()).toLocalDate().equals(begin)
+                || input.getHistoryBeginTime() == null
+                || !ForecastDailyRows.parse(input.getHistoryBeginTime()).toLocalDate().equals(yearStart)
+                || input.getHistoryEndTime() == null
+                || !ForecastDailyRows.parse(input.getHistoryEndTime()).toLocalDate().equals(begin.minusDays(1)))
+            throw error("水箱必须从" + yearStart + "连续计算，请重新加载输入");
+        Map<String, ForecastContracts.SeriesResponse> bySensor = new LinkedHashMap<>();
+        for (ForecastContracts.SeriesResponse series : input.getSeries()) {
+            if (!"rainfall".equals(series.getKey())) continue;
+            if (bySensor.put(series.getSenid(), series) != null) throw error("历史雨量站重复: " + series.getSenid());
+        }
+        Map<String, Double> total = new TreeMap<>();
+        com.yr.wds.xinyidai.common.cev.flood.stationconfig.SourceDataProfileDefinition profile =
+                registry.getConfiguration().getSourceDataProfileMap().get(station.getDataProfileRef());
+        for (com.yr.wds.xinyidai.common.cev.flood.stationconfig.SourceSeriesDefinition definition : profile.getSeries()) {
+            if (!"rainfall".equals(definition.getRole())) continue;
+            ForecastContracts.SeriesResponse series = bySensor.remove(definition.getSensorId());
+            if (series == null) throw error("缺少历史雨量站: " + definition.getName());
+            Map<String, Double> days = new LinkedHashMap<>();
+            for (ForecastContracts.ValuePoint point : series.getValues()) {
+                if (point == null || point.getTime() == null) throw error("历史雨量日期不能为空");
+                LocalDateTime time = ForecastDailyRows.parse(point.getTime());
+                if (!time.toLocalTime().equals(java.time.LocalTime.MIDNIGHT)
+                        || time.toLocalDate().isBefore(yearStart) || !time.toLocalDate().isBefore(begin))
+                    throw error("历史雨量日期不在逐日计算范围内: " + point.getTime());
+                if (days.containsKey(point.getTime())) throw error("历史雨量日期重复: " + point.getTime());
+                days.put(point.getTime(), point.getValue());
+            }
+            for (java.time.LocalDate day = yearStart; day.isBefore(begin); day = day.plusDays(1)) {
+                String time = day + " 00:00:00";
+                Double value = days.get(time);
+                if (value == null || !Double.isFinite(value) || value < 0)
+                    throw error("历史雨量缺失或无效: " + station.getName() + "/" + definition.getName() + "/" + day);
+                total.put(time, total.getOrDefault(time, 0D) + value * definition.getWeight());
+            }
+        }
+        if (!bySensor.isEmpty()) throw error("历史雨量含未配置站点: " + bySensor.keySet());
+        for (ForecastContracts.ValuePoint point : input.getForecastRainfall().getValues()) total.put(point.getTime(), point.getValue());
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<String, Double> entry : total.entrySet()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("time", entry.getKey()); row.put("rainfall", entry.getValue()); result.add(row);
+        }
+        return result;
+    }
+
+    private void validateTankRainfall(ForecastContracts.InputResponse input) {
+        if (input.getForecastRainfall() == null || input.getForecastRainfall().getValues().isEmpty())
+            throw error("请填写水箱分区预报雨量: " + input.getStationCode());
+        Map<String,Double> values = new LinkedHashMap<String,Double>();
+        for (ForecastContracts.ValuePoint p : input.getForecastRainfall().getValues()) {
+            if (p == null || p.getValue() == null || !Double.isFinite(p.getValue()) || p.getValue() < 0)
+                throw error("预报雨量必须填写非负数，晴天请明确填写0: " + input.getStationCode());
+            LocalDateTime time = ForecastDailyRows.parse(p.getTime());
+            if (!time.toLocalTime().equals(java.time.LocalTime.MIDNIGHT) || values.put(p.getTime(),p.getValue()) != null)
+                throw error("水箱预报雨量必须每天一条且时间为零点: " + p.getTime());
+        }
+        if (input.getForecastBeginTime() == null || input.getForecastEndTime() == null)
+            throw error("水箱输入缺少预报起止时间，请重新加载");
+        java.time.LocalDate begin = ForecastDailyRows.parse(input.getForecastBeginTime()).toLocalDate();
+        java.time.LocalDate end = ForecastDailyRows.parse(input.getForecastEndTime()).toLocalDate();
+        if (begin.isAfter(end)) throw error("预报开始时间不能晚于结束时间");
+        for (java.time.LocalDate day=begin; !day.isAfter(end); day=day.plusDays(1))
+            if (!values.containsKey(day.toString()+" 00:00:00")) throw error("预报雨量缺少日期: " + input.getStationCode()+"/"+day);
+        if (values.size() != java.time.temporal.ChronoUnit.DAYS.between(begin,end)+1)
+            throw error("预报雨量存在所选日期范围外的记录");
     }
 
     /** 完整水箱计算由 Java 编排四个分区，Python 继续只负责单分区算法。 */
@@ -288,6 +393,15 @@ public class ForecastCalculationService {
         List<Map<String, Object>> basinDetails = new ArrayList<Map<String, Object>>();
         Map<String, Double> regionalFlowByTime = new TreeMap<String, Double>();
         Set<String> expectedTimes = null;
+        ForecastContracts.InputResponse firstInput = request.getInputs().get(0);
+        for (ForecastContracts.InputResponse input : request.getInputs()) {
+            if (!java.util.Objects.equals(firstInput.getForecastBeginTime(), input.getForecastBeginTime())
+                    || !java.util.Objects.equals(firstInput.getForecastEndTime(), input.getForecastEndTime()))
+                throw error("四个分区的预报起止日期必须一致");
+            StationModelRoute route = validateTankInput(input);
+            ForecastMissingValues.normalize(input, "TANK_MODEL");
+            tankPayload(input, stationParameters(request, input.getStationCode()), route.getStation());
+        }
         for (AggregationSourceDefinition source : basinSources) {
             ForecastContracts.InputResponse input = inputByStation.remove(source.getStationCode());
             if (input == null) throw error("缺少水箱分区输入: " + source.getStationCode());
@@ -308,7 +422,9 @@ public class ForecastCalculationService {
             basinDetail.put("stationName", route.getStation().getName());
             // 只返回 Excel 可见参数、首时段起算值和可见过程列，不暴露 Python 内部包装。
             basinDetail.put("modelParameters", tankPageParameterRows(payload.get("modelParameters")));
-            basinDetail.put("initialState", tankPageInitialState(payload.get("initialState")));
+            Map<String, Object> excelSeed = new LinkedHashMap<String, Object>();
+            excelSeed.put("d", 15D); excelSeed.put("i", 15D); excelSeed.put("l", 15D);
+            basinDetail.put("initialState", excelSeed);
             basinDetail.put("tableData", tankPageTableData(modelResult.get("forecastSeries")));
             basinDetails.add(basinDetail);
             if (expectedTimes == null) expectedTimes = basinTimes;
@@ -324,8 +440,21 @@ public class ForecastCalculationService {
         response.setModelCode(aggregateStation.getModelRef());
         response.setSaved(false);
         response.setInputDataList(new ArrayList<ForecastContracts.InputResponse>(request.getInputs()));
-        response.setResultData(aggregateResult(basinDetails, regionalFlowByTime,
-                request.getShatuoOutflowSeries()));
+        if (request.getShatuoOutflowSeries() != null && !request.getShatuoOutflowSeries().isEmpty()) {
+            Map<String, Double> outflow = new LinkedHashMap<>();
+            for (ForecastContracts.ValuePoint point : request.getShatuoOutflowSeries()) {
+                if (point == null || point.getTime() == null || point.getValue() == null
+                        || !Double.isFinite(point.getValue()) || point.getValue() < 0
+                        || !regionalFlowByTime.containsKey(point.getTime())
+                        || outflow.put(point.getTime(), point.getValue()) != null)
+                    throw error("沙沱出库须为计算范围内每天一条非负数");
+            }
+
+        }
+        Map<String, Object> result = aggregateResult(basinDetails, regionalFlowByTime,
+                tankResultOutflow(firstInput, request.getShatuoOutflowSeries()));
+        ForecastResultPrecision.applyResultData(result);
+        response.setResultData(result);
         return response;
     }
 
@@ -495,6 +624,59 @@ public class ForecastCalculationService {
         return basinTimes;
     }
 
+    // 预报日期手填优先；留空沿用该日期之前最新有效实测，不将手填值当成实测继续后延。
+    static List<ForecastContracts.ValuePoint> tankResultOutflow(ForecastContracts.InputResponse input,
+            List<ForecastContracts.ValuePoint> boundary) {
+        TreeMap<String, ForecastContracts.ValuePoint> measured = new TreeMap<>();
+        Map<String, ForecastContracts.ValuePoint> result = new TreeMap<>();
+        if (input.getSeries() != null) for (ForecastContracts.SeriesResponse series : input.getSeries()) {
+            if (!"shatuoOutflow".equals(series.getKey())) continue;
+            for (ForecastContracts.ValuePoint point : series.getValues()) {
+                result.put(point.getTime(), point);
+                if (point.getValue() == null || "DEFAULT_ZERO".equals(point.getSource())) continue;
+                if (!Double.isFinite(point.getValue()) || point.getValue() < 0)
+                    throw new StationModelConfigException("沙沱实测出库无效: " + point.getTime());
+                measured.put(point.getTime(), point);
+            }
+        }
+        Map<String, ForecastContracts.ValuePoint> manual = new TreeMap<>();
+        TreeMap<String, ForecastContracts.ValuePoint> planned = new TreeMap<>();
+        if (input.getSeries() != null) for (ForecastContracts.SeriesResponse series : input.getSeries()) {
+            if (!"shatuoPlannedOutflow".equals(series.getKey())) continue;
+            for (ForecastContracts.ValuePoint p : series.getValues()) {
+                if (p.getValue() != null && Double.isFinite(p.getValue()) && p.getValue() >= 0)
+                    planned.put(p.getTime(), p);
+            }
+        }
+        if (boundary != null) for (ForecastContracts.ValuePoint point : boundary) manual.put(point.getTime(), point);
+
+        java.time.LocalDate end = ForecastDailyRows.parse(input.getForecastEndTime()).toLocalDate();
+        for (java.time.LocalDate day = ForecastDailyRows.parse(input.getForecastBeginTime()).toLocalDate();
+                !day.isAfter(end); day = day.plusDays(1)) {
+            String time = day + " 00:00:00";
+            ForecastContracts.ValuePoint point = manual.get(time);
+            if (point == null && planned.floorEntry(time) != null) {
+                Map.Entry<String, ForecastContracts.ValuePoint> latest = planned.floorEntry(time);
+                point = new ForecastContracts.ValuePoint();
+                point.setTime(time); point.setValue(latest.getValue().getValue());
+                point.setSource(latest.getKey().equals(time) ? "PLANLOAD" : "PLANLOAD_CARRY_FORWARD");
+            }
+            if (point == null) {
+                Map.Entry<String, ForecastContracts.ValuePoint> latest = measured.floorEntry(time);
+
+                point = new ForecastContracts.ValuePoint();
+                point.setTime(time); point.setValue(latest == null ? 0D : latest.getValue().getValue());
+                point.setSource(latest == null ? "DEFAULT_ZERO" : latest.getKey().equals(time) ? "DAYDB" : "DAYDB_CARRY_FORWARD");
+                if (latest != null && latest.getValue().getSource() != null
+                        && latest.getValue().getSource().startsWith("PLANLOAD")) {
+                    point.setSource(latest.getKey().equals(time) ? latest.getValue().getSource() : "PLANLOAD_CARRY_FORWARD");
+                }
+            }
+            result.put(time, point);
+        }
+        return new ArrayList<>(result.values());
+    }
+
     private Map<String, Object> aggregateResult(List<Map<String, Object>> basinDetails,
                                                 Map<String, Double> regionalFlowByTime,
                                                 List<ForecastContracts.ValuePoint> shatuoSeries) {
@@ -532,7 +714,7 @@ public class ForecastCalculationService {
             }
             for (Map.Entry<String, Double> entry : regionalFlowByTime.entrySet()) {
                 Double shatuo = shatuoByTime.get(entry.getKey());
-                if (shatuo == null) throw error("沙沱出库缺少时段: " + entry.getKey());
+                if (shatuo == null) continue; // 历史出库未提供，不影响未来逐日汇总。
                 Map<String, Object> row = chartRow(rows, entry.getKey());
                 row.put("shatuoOutflow", shatuo);
                 row.put("pengshuiInflow", entry.getValue() + shatuo);

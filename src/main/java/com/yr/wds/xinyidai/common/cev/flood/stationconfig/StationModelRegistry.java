@@ -18,10 +18,11 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * 生产工程电站模型配置注册表。
  *
- * <p>共享生产工程默认将该配置视为可选，未部署云南大唐功能的现场即使没有 XML 也能正常启动。
- * 配置文件存在时会完整解析和校验，成功才原子替换；运行中加载失败则继续使用上一份有效配置。</p>
+ * <p>该组件仅在外部配置文件存在时注册。配置存在时会完整解析和校验，成功才原子替换；
+ * 运行中加载失败则继续使用上一份有效配置。</p>
  */
 @Service
+@ConditionalOnYunnanDatangFeature
 public class StationModelRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(StationModelRegistry.class);
 
@@ -85,7 +86,7 @@ public class StationModelRegistry {
     private void refreshIfChanged() {
         if (!properties.isReloadOnChange()) return;
         Path path = resolvePath();
-        // 可选文件尚未部署时直接返回；文件后续出现后仍可被自动加载。
+        // 已启用现场运行期间若文件被短暂移走则直接返回；文件恢复后可再次自动加载。
         if (!Files.isRegularFile(path)) return;
         try {
             long lastModified = Files.getLastModifiedTime(path).toMillis();

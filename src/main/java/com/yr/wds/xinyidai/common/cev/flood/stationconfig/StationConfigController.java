@@ -20,6 +20,7 @@ import java.util.Map;
  */
 @CrossOrigin(originPatterns = "*")
 @RestController
+@ConditionalOnYunnanDatangFeature
 @RequestMapping("/forecast/station-config")
 public class StationConfigController {
     private final StationConfigQueryService queryService;

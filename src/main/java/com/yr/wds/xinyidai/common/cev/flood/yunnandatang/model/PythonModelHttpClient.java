@@ -3,7 +3,10 @@ package com.yr.wds.xinyidai.common.cev.flood.yunnandatang.model;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yr.wds.xinyidai.common.cev.flood.stationconfig.ModelDefinition;
+import com.yr.wds.xinyidai.common.cev.flood.stationconfig.ConditionalOnYunnanDatangFeature;
 import com.yr.wds.xinyidai.common.cev.flood.stationconfig.StationModelConfigException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -19,7 +22,9 @@ import java.util.Map;
  * <p>每个模型从 XML 的 config 属性获得配置前缀，因此 API、水箱和沙陀回归模型可以部署在不同地址。</p>
  */
 @Service
+@ConditionalOnYunnanDatangFeature
 public class PythonModelHttpClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PythonModelHttpClient.class);
     private final Environment environment;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -36,11 +41,14 @@ public class PythonModelHttpClient {
         String path = firstText(property(prefix + ".invoke-path"),
                 property(prefix + ".http.invoke-path"), property("forecast.model.http.invoke-path"));
         if (path == null) path = "/api/model/invoke";
+        String targetUrl = trimSlash(baseUrl) + normalizePath(path);
+        long startedAt = System.currentTimeMillis();
+        LOGGER.info("[云南大唐][Python模型] 开始调用 modelCode={}, url={}", model.getCode(), targetUrl);
 
         try {
             RestTemplate restTemplate = restTemplate(prefix);
             ResponseEntity<String> response = restTemplate.postForEntity(
-                    trimSlash(baseUrl) + normalizePath(path), request, String.class);
+                    targetUrl, request, String.class);
             if (!response.getStatusCode().is2xxSuccessful()) {
                 throw new StationModelConfigException("Python 模型 HTTP 状态码: "
                         + response.getStatusCodeValue());
@@ -51,14 +59,25 @@ public class PythonModelHttpClient {
                 throw new StationModelConfigException("Python 模型执行失败: " + body.get("message"));
             }
             Object data = body.get("data");
-            if (data == null) return new LinkedHashMap<String, Object>();
-            if (!(data instanceof Map)) throw new StationModelConfigException("Python 模型 data 必须是 JSON 对象");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> result = (Map<String, Object>) data;
+            Map<String, Object> result;
+            if (data == null) {
+                result = new LinkedHashMap<String, Object>();
+            } else {
+                if (!(data instanceof Map)) throw new StationModelConfigException("Python 模型 data 必须是 JSON 对象");
+                @SuppressWarnings("unchecked")
+                Map<String, Object> modelResult = (Map<String, Object>) data;
+                result = modelResult;
+            }
+            LOGGER.info("[云南大唐][Python模型] 调用成功 modelCode={}, url={}, resultFields={}, elapsedMs={}",
+                    model.getCode(), targetUrl, result.size(), System.currentTimeMillis() - startedAt);
             return result;
         } catch (StationModelConfigException ex) {
+            LOGGER.error("[云南大唐][Python模型] 调用失败 modelCode={}, url={}, elapsedMs={}, message={}",
+                    model.getCode(), targetUrl, System.currentTimeMillis() - startedAt, ex.getMessage(), ex);
             throw ex;
         } catch (Exception ex) {
+            LOGGER.error("[云南大唐][Python模型] 调用异常 modelCode={}, url={}, elapsedMs={}",
+                    model.getCode(), targetUrl, System.currentTimeMillis() - startedAt, ex);
             throw new StationModelConfigException("Python 模型调用失败: " + ex.getMessage(), ex);
         }
     }
