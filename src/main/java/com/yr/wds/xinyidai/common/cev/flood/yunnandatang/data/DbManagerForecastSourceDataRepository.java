@@ -42,7 +42,7 @@ public class DbManagerForecastSourceDataRepository implements ForecastSourceData
                     .append(" AS DATATIME, V").append(i).append(" AS VAL FROM P");
         }
         // 每个业务日取最近计划的有效值；-99/NULL 不阻挡较早批次补缺，零有效。
-        String sql = "WITH P AS (SELECT * FROM WDS.PLANLOAD WHERE ADID=? AND FLAG=99 AND TIME<=?), "
+        String sql = "WITH P AS (SELECT * FROM WDS.PLANLOAD WHERE ADID=? AND FLAG=98 AND TIME<=?), "
                 + "E AS (" + expanded + "), R AS (SELECT ADID,DATATIME,VAL,"
                 + "ROW_NUMBER() OVER(PARTITION BY DATATIME ORDER BY PLANTIME DESC,EDITTIME DESC) RN "
                 + "FROM E WHERE VAL>=0 AND DATATIME<=?) "

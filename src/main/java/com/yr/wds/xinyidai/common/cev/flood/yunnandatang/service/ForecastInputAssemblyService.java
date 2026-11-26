@@ -175,6 +175,7 @@ public class ForecastInputAssemblyService {
         List<ForecastContracts.InputResponse> inputs = assembleTankGroup(request);
         java.time.ZoneId zone = java.time.ZoneId.of("Asia/Shanghai");
         Calendar issue = parseRequired(request.getForecastTime(), "forecastTime");
+        issue = tankWeatherIssueLimit(issue, Calendar.getInstance());
         for (ForecastContracts.InputResponse input : inputs) {
             StationDefinition station = registry.resolveRoute(input.getStationCode()).getStation();
             SourceDataProfileDefinition profile = registry.getConfiguration().getSourceDataProfileMap()
@@ -191,6 +192,19 @@ public class ForecastInputAssemblyService {
             ForecastMissingValues.normalize(input, "TANK_MODEL");
         }
         return inputs;
+    }
+
+    /** 当天起报采用当前已发布批次；历史日期采用该日结束前最新批次。 */
+    static Calendar tankWeatherIssueLimit(Calendar forecastTime, Calendar now) {
+        java.time.ZoneId zone = java.time.ZoneId.of("Asia/Shanghai");
+        boolean today = forecastTime.toInstant().atZone(zone).toLocalDate()
+                .equals(now.toInstant().atZone(zone).toLocalDate());
+        if (today) return (Calendar) now.clone();
+        if (forecastTime.toInstant().atZone(zone).toLocalDate().isBefore(now.toInstant().atZone(zone).toLocalDate())) {
+            return java.util.GregorianCalendar.from(forecastTime.toInstant().atZone(zone).toLocalDate()
+                    .atTime(23, 59, 59).atZone(zone));
+        }
+        return (Calendar) forecastTime.clone();
     }
 
     /** 只在数据库读取边界转换一次；手工输入、计算结果、保存回读均已是业务时标。 */
